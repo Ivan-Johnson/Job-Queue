@@ -1,0 +1,11 @@
+#.gitignore
+#
+#Defines what should not be added to the git repository
+#
+#Copyright(C) 2018, Ivan Tobias Johnson
+#
+#LICENSE: MIT License
+
+Bin
+/makefile.config
+Test/bisect.c

@@ -1,0 +1,59 @@
+#!/bin/sh
+
+#Scripts/GitHooks/pre-commit
+#
+#Attempt builds and tests before committing to develop or stable
+#
+#Copyright(C) 2018, Ivan Tobias Johnson
+#
+#LICENSE: MIT License
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+#0 = pass; 1 = soft fail; 2 = hard fail
+code=0
+
+
+
+POSSIBLY_MISSING_COPYRIGHT=$(git diff --cached --name-only --diff-filter=RACT --exit-code --quiet; echo $?) #Rename, Added, Copied
+
+if [ "$POSSIBLY_MISSING_COPYRIGHT" != "0" ]; then
+	echo "#NOTE: this commit seems to require updates to one or more file's copyright"
+	echo "headers (in particular, you have renamed, added, or copied at least one file)."
+	echo "Please verify that the headers of those files are correct before overriding"
+	echo "this warning."
+	code=1
+fi
+
+if [ "$branch" == "stable" ] || [ "$branch" == "develop" ]; then
+	echo "Building..."
+	VALID_BUILD=$(make -j all > /dev/null; echo $?)
+	echo "Testing..."
+	VALID_TEST=$([ "$VALID_BUILD" = 0 ] && make -j test > /dev/null; echo $?)
+	if [ "$branch" == "stable" ]; then
+		code=1
+		echo "#In general, you shouldn't commit directly to the stable branch!"
+
+		if [ "$VALID_BUILD" != "0" ]; then
+			code=2
+			echo "#THIS COMMIT DOES NOT COMPILE!"
+			echo "UNDER NO CIRCUMSTANCES SHOULD YOU COMMIT THIS TO THE STABLE BRANCH!"
+		elif [ "$VALID_TEST" != "0" ]; then
+			echo "#This commit does not pass all tests!"
+		fi
+	elif [ "$branch" == "develop" ]; then
+		if [ "$VALID_BUILD" != "0" ]; then
+			code=2
+			echo "#THIS COMMIT DOES NOT COMPILE!"
+			echo "You *REALLY* shouldn't commit this to the develop branch!"
+		elif [ "$VALID_TEST" != "0" ]; then
+			code=1
+			echo "#This commit does not pass all tests!"
+			echo "Please fix them before committing to the develop branch!"
+		fi
+	fi
+fi
+
+[ "$code" = "1" ] &&
+	echo "(Use \"git commit --no-verify\" to override)"
+exit $code

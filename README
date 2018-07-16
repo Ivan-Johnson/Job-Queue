@@ -1,0 +1,5 @@
+Doppelgänger
+
+Doppelgänger (a.k.a. Doppelganger) is C repository with a complete build and
+test system, but essentially no actual code. Doppelgänger's sole purpose is to
+serve as a starting point for other projects.
