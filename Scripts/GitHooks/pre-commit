@@ -8,6 +8,8 @@
 #
 #LICENSE: MIT License
 
+git stash -q --keep-index
+
 branch=$(git rev-parse --abbrev-ref HEAD)
 
 code=0
@@ -44,5 +46,7 @@ else
 		ECHO "#THIS COMMIT DOES NOT PASS ALL TESTS!"
 	fi
 fi
+
+git stash pop -q
 
 exit $code
