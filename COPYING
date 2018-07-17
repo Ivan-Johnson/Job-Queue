@@ -1,0 +1,17 @@
+Licenses can be found in files within the "Licenses" directory.  Most text files
+in this repository contain a conspicuous notice that state who owns the
+copyright on that file, as well as the year(s) the file was made in. These
+notices also specify which of the provided licenses the file can be used
+with. All files that do not contain such a notice should have the same
+information listed in the "LEGAL" file instead.
+
+The phrases "GPL 2.0" and "GPL 2.0 only" are used to indicate that a file is
+licensed ONLY under version two of the "GNU General Public License". In
+particular, later versions of the GPL have no bearing on how these files are
+allowed to be used.
+
+The lack of an explicit declaration of license or copyright for any file is a
+mistake and should be reported as a bug so that it can be fixed. In the unlikely
+event that such a mistake does exist, one cannot assume anything about which
+license(s) those files can be used with; they might not even be under an open
+source license at all.

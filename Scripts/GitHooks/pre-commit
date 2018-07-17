@@ -1,0 +1,52 @@
+#!/bin/sh
+
+#Scripts/GitHooks/pre-commit
+#
+#Attempt builds and tests before committing to develop or stable
+#
+#Copyright(C) 2018, Ivan Tobias Johnson
+#
+#LICENSE: MIT License
+
+git stash -q --keep-index
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+code=0
+
+
+
+POSSIBLY_MISSING_COPYRIGHT=$(git diff --cached --name-only --diff-filter=RACT --exit-code --quiet; echo $?) #Rename, Added, Copied
+
+if [ "$POSSIBLY_MISSING_COPYRIGHT" != "0" ]; then
+	code=1
+	echo "#NOTE: this commit seems to require updates to one or more file's copyright"
+	echo "headers (in particular, you have renamed, added, or copied at least one file)."
+	echo "Please verify that the headers of those files are correct before overriding"
+	echo "this warning."
+fi
+
+if [ "$branch" == "stable" ]; then
+	code=1
+	echo "#IN GENERAL, YOU SHOULDN'T COMMIT DIRECTLY TO THE STABLE BRANCH!"
+fi
+
+
+echo "Building..."
+VALID_BUILD=$(make -j all > /dev/null; echo $?)
+
+if [ "$VALID_BUILD" != "0" ]; then
+	code=1;
+	echo "#THIS COMMIT DOES NOT COMPILE!"
+else
+	echo "Testing..."
+	VALID_TEST=$([ "$VALID_BUILD" = 0 ] && make -j test > /dev/null; echo $?)
+	if [ "$VALID_TEST" != "0" ]; then
+		code=1;
+		ECHO "#THIS COMMIT DOES NOT PASS ALL TESTS!"
+	fi
+fi
+
+git stash pop -q
+
+exit $code
