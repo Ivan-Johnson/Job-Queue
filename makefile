@@ -179,11 +179,11 @@ $(BIN_TEST_DIR):
 #GIT BISECT#
 ############
 $(BISECT_TEST_SRC): $(BISECT_TEST_TEMPLATE)
-	if [ -e "$@" ]; then \
-		mkdir -p "$$(dirname $(SRC_TEST_DIR))"; \
-		cp "$<" "$@"; \
-	else \
+	@if [ -e "$@" ]; then \
 		touch "$@"; \
+	else \
+		mkdir -p "$$(dirname $@)"; \
+		cp "$<" "$@"; \
 	fi
 
 
@@ -212,9 +212,8 @@ CLEAN:
 
 $(MAKEFILE_CONFIG): $(MAKEFILE_CONFIG_TEMPLATE)
 	@if [ -e "$@" ]; then \
-		echo "ERROR: $(MAKEFILE_CONFIG_TEMPLATE) is newer than $(MAKEFILE_CONFIG)"; \
-		echo "Update $(MAKEFILE_CONFIG) to proceed"; \
-		exit 1; \
+		touch "$@"; \
+	else \
+		mkdir -p "$$(dirname $@)"; \
+		cp "$<" "$@"; \
 	fi
-	configdir=$$(dirname "$@"); mkdir -p "$$configdir"
-	cp "$(MAKEFILE_CONFIG_TEMPLATE)" "$(MAKEFILE_CONFIG)"
