@@ -5,7 +5,7 @@
  *
  * Copyright(C) 2018, Ivan Tobias Johnson
  *
- * LICENSE: MIT License
+ * LICENSE: GPL 2.0
  */
 
 #include "unity.h"
