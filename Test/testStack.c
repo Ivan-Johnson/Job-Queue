@@ -50,7 +50,7 @@ void testWatchSize()
 	TEST_ASSERT_EQUAL_INT(0, stackSize());
 }
 
-void testStoredJobs()
+void testPeek()
 {
 	struct job job0, job1;
 	job0.cmd = "iowelkjm,ncvxsd";
@@ -60,10 +60,77 @@ void testStoredJobs()
 	stackPush(job1);
 
 	TEST_ASSERT_TRUE(stackPeek().cmd == job1.cmd);
-	TEST_ASSERT_TRUE(stackPop().cmd == job1.cmd);
+	stackPop();
 
 	TEST_ASSERT_TRUE(stackPeek().cmd == job0.cmd);
+}
+
+void testPopSimple()
+{
+	struct job job0, job1;
+	job0.cmd = "iowelkjm,ncvxsd";
+	job1.cmd = "oiuwelrkjmncxvw";
+
+	stackPush(job0);
+	stackPush(job1);
+
+	TEST_ASSERT_TRUE(stackPop().cmd == job1.cmd);
 	TEST_ASSERT_TRUE(stackPop().cmd == job0.cmd);
+}
+
+void testPop()
+{
+	struct job job0, job1, job2, job3, job4;
+	job0.cmd = "0";
+	job1.cmd = "1";
+	job2.cmd = "2";
+	job3.cmd = "3";
+	job4.cmd = "4";
+
+	//state: ∅
+	TEST_ASSERT_EQUAL_INT(0, stackSize());
+
+	stackPush(job0);
+	stackPush(job1);
+	stackPush(job2);
+	stackPush(job3);
+	stackPush(job4);
+
+	//state: job0, job1, job2, job3, job4
+	TEST_ASSERT_EQUAL_INT(5, stackSize());
+
+	TEST_ASSERT_TRUE(stackPop().cmd == job4.cmd);
+	TEST_ASSERT_TRUE(stackPop().cmd == job3.cmd);
+
+	//state: job0, job1, job2
+	TEST_ASSERT_EQUAL_INT(3, stackSize());
+
+	stackPush(job4);
+	stackPush(job3);
+
+	//state: job0, job1, job2, job4, job3
+	TEST_ASSERT_EQUAL_INT(5, stackSize());
+
+	TEST_ASSERT_TRUE(stackPop().cmd == job3.cmd);
+	TEST_ASSERT_TRUE(stackPop().cmd == job4.cmd);
+	TEST_ASSERT_TRUE(stackPop().cmd == job2.cmd);
+	TEST_ASSERT_TRUE(stackPop().cmd == job1.cmd);
+	TEST_ASSERT_TRUE(stackPop().cmd == job0.cmd);
+
+	//state: ∅
+	TEST_ASSERT_EQUAL_INT(0, stackSize());
+
+	stackPush(job2);
+	stackPush(job0);
+
+	//state: job2, job0
+	TEST_ASSERT_EQUAL_INT(2, stackSize());
+
+	TEST_ASSERT_TRUE(stackPop().cmd == job0.cmd);
+	TEST_ASSERT_TRUE(stackPop().cmd == job2.cmd);
+
+	//state: ∅
+	TEST_ASSERT_EQUAL_INT(0, stackSize());
 }
 
 void testGrowth()
