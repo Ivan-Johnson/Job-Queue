@@ -151,6 +151,8 @@ void testGrowth()
 	TEST_ASSERT_EQUAL_INT(cap, stackCurCapacity());
 	TEST_ASSERT_EQUAL_INT(cap - 2, stackSize());
 
+	//state: job0 x cap - 2
+
 	stackPush(job1);
 	TEST_ASSERT_EQUAL_INT(cap, stackCurCapacity());
 
@@ -158,15 +160,24 @@ void testGrowth()
 	TEST_ASSERT_EQUAL_INT(cap, stackCurCapacity());
 	TEST_ASSERT_EQUAL_INT(cap, stackSize());
 
+	//state: job0 x cap - 2, job1, job2
+	//at this point, the stack is filled to capacity
+
 	stackPush(job3);
 	TEST_ASSERT_TRUE(stackCurCapacity() > cap);
 	TEST_ASSERT_EQUAL_INT(cap + 1, stackSize());
 
+	//state: job0 x cap - 2, job1, job2, job3
+	//at this point, the stack has just grown
+
 	stackPush(job4);
 	stackPush(job5);
+	//state: job0 x cap - 2, job1, job2, job3, job4, job5
 	TEST_ASSERT_TRUE(stackCurCapacity() > cap);
 	TEST_ASSERT_EQUAL_INT(cap + 3, stackSize());
 
+	//state: job0 x cap - 2, job1, job2, job3, job4, job5
+	//pop to ensure that jobs 1-3 weren't lost in the growth process
 	TEST_ASSERT_TRUE(stackPop().cmd == job5.cmd);
 	TEST_ASSERT_TRUE(stackPop().cmd == job4.cmd);
 	TEST_ASSERT_TRUE(stackPop().cmd == job3.cmd);
@@ -188,6 +199,7 @@ void testShrinkage()
 
 	stackPush(job0);
 	size_t cap = stackCurCapacity();
+	//If we grow once, we can shrink by popping the item at shrinkpoint
 	size_t shrinkpoint = cap / 2;
 	for (size_t size = 1; size <= cap; size++) {
 		if (shrinkpoint - 2 <= size && size <= shrinkpoint + 2) {
@@ -196,11 +208,15 @@ void testShrinkage()
 			stackPush(job0);
 		}
 	}
+
+	//state: job0, …, job0, job1, job2, job3, job4, job5, job0, …, job0
+	//The last push made the stack grow, and job3 is at the shrinkpoint
 	TEST_ASSERT_TRUE(cap < stackCurCapacity());
 	TEST_ASSERT_EQUAL_INT(cap + 1, stackSize());
+
+	//popping immediately after growing should not cause a shrink
 	stackPop();
 	TEST_ASSERT_TRUE(cap < stackCurCapacity());
-	TEST_ASSERT_EQUAL_INT(cap, stackSize());
 
 	for (size_t size = cap; size > shrinkpoint + 3; size--) {
 		stackPop();
@@ -208,15 +224,20 @@ void testShrinkage()
 	TEST_ASSERT_EQUAL_INT(shrinkpoint + 3, stackSize());
 
 
+	//confirm that our data is still intact
 	TEST_ASSERT_TRUE(stackPop().cmd == job5.cmd);
 	TEST_ASSERT_TRUE(stackPop().cmd == job4.cmd);
 
+	//confirm that we haven't shrunk yet
 	TEST_ASSERT_EQUAL_INT(shrinkpoint + 1, stackSize());
 	TEST_ASSERT_TRUE(cap < stackCurCapacity());
+
+	//shrink
 	TEST_ASSERT_TRUE(stackPop().cmd == job3.cmd);
 	TEST_ASSERT_EQUAL_INT(shrinkpoint, stackSize());
 	TEST_ASSERT_EQUAL_INT(cap, stackCurCapacity());
 
+	//confirm that the top of the stack is still intact
 	TEST_ASSERT_TRUE(stackPop().cmd == job2.cmd);
 	TEST_ASSERT_TRUE(stackPop().cmd == job1.cmd);
 }
