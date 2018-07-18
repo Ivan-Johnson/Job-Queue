@@ -20,7 +20,7 @@ void tearDown()
 	//NOP
 }
 
-void testASDF()
-{
-	TEST_ASSERT_EQUAL_INT(0, 0);
-}
+//void testASDF()
+//{
+//	TEST_ASSERT_EQUAL_INT(0, 0);
+//}

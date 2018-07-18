@@ -8,10 +8,10 @@
 #
 #LICENSE: MIT License
 
-git stash -q --keep-index
+
+git stash push -m "Prepping for pre-commit test" -q --include-untracked --keep-index
 
 branch=$(git rev-parse --abbrev-ref HEAD)
-
 code=0
 
 
