@@ -174,3 +174,49 @@ void testGrowth()
 	TEST_ASSERT_TRUE(stackPop().cmd == job1.cmd);
 	TEST_ASSERT_TRUE(stackPop().cmd == job0.cmd);
 }
+
+void testShrinkage()
+{
+	struct job job0, job1, job2, job3, job4, job5;
+	job0.cmd = "0";
+	job1.cmd = "1";
+	job2.cmd = "2";
+	job3.cmd = "3";
+	job4.cmd = "4";
+	job5.cmd = "5";
+	struct job jobs[] = {job1, job2, job3, job4, job5};
+
+	stackPush(job0);
+	size_t cap = stackCurCapacity();
+	size_t shrinkpoint = cap / 2;
+	for (size_t size = 1; size <= cap; size++) {
+		if (shrinkpoint - 2 <= size && size <= shrinkpoint + 2) {
+			stackPush(jobs[size - shrinkpoint + 2]);
+		} else {
+			stackPush(job0);
+		}
+	}
+	TEST_ASSERT_TRUE(cap < stackCurCapacity());
+	TEST_ASSERT_EQUAL_INT(cap + 1, stackSize());
+	stackPop();
+	TEST_ASSERT_TRUE(cap < stackCurCapacity());
+	TEST_ASSERT_EQUAL_INT(cap, stackSize());
+
+	for (size_t size = cap; size > shrinkpoint + 3; size--) {
+		stackPop();
+	}
+	TEST_ASSERT_EQUAL_INT(shrinkpoint + 3, stackSize());
+
+
+	TEST_ASSERT_TRUE(stackPop().cmd == job5.cmd);
+	TEST_ASSERT_TRUE(stackPop().cmd == job4.cmd);
+
+	TEST_ASSERT_EQUAL_INT(shrinkpoint + 1, stackSize());
+	TEST_ASSERT_TRUE(cap < stackCurCapacity());
+	TEST_ASSERT_TRUE(stackPop().cmd == job3.cmd);
+	TEST_ASSERT_EQUAL_INT(shrinkpoint, stackSize());
+	TEST_ASSERT_EQUAL_INT(cap, stackCurCapacity());
+
+	TEST_ASSERT_TRUE(stackPop().cmd == job2.cmd);
+	TEST_ASSERT_TRUE(stackPop().cmd == job1.cmd);
+}

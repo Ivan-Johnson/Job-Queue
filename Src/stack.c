@@ -59,6 +59,16 @@ static inline void stackGrow()
 	jobs = jobsNew;
 }
 
+static inline void stackShrink()
+{
+	struct job *jobsNew = malloc(sizeof(struct job) * arr_len / 2);
+
+	memcpy(jobsNew, jobs, sizeof(struct job) * next);
+	arr_len /= 2;
+
+	jobs = jobsNew;
+}
+
 void stackPush(struct job job)
 {
 	stackInitialize();
@@ -79,7 +89,11 @@ size_t stackSize()
 struct job stackPop()
 {
 	next--;
-	return jobs[next];
+	struct job ret = jobs[next];
+	if (next == arr_len / 4) {
+		stackShrink();
+	}
+	return ret;
 }
 
 struct job stackPeek()
