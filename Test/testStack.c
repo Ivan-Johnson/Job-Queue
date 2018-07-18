@@ -18,7 +18,7 @@ void setUp()
 
 void tearDown()
 {
-	stackPURGE();
+	stackFree();
 	TEST_ASSERT_EQUAL_INT(0, stackSize());
 }
 

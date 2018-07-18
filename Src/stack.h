@@ -21,8 +21,9 @@ struct job stackPop();
 //Behavior is undefined if there is nothing on the stack
 struct job stackPeek();
 
+void stackFree();
+
 #ifdef TEST
-void stackPURGE();
 size_t stackCurCapacity();
 #endif
 

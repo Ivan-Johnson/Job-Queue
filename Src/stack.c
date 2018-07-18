@@ -24,7 +24,7 @@
 static struct job *jobs = NULL;
 static size_t arr_len = 0, next = 0;
 
-void stackPURGE()
+void stackFree()
 {
 	if (jobs != NULL) {
 		free(jobs);
@@ -56,6 +56,7 @@ static inline void stackGrow()
 	memcpy(jobsNew, jobs, sizeof(struct job) * arr_len);
 	arr_len *= 2;
 
+	free(jobs);
 	jobs = jobsNew;
 }
 
@@ -66,6 +67,7 @@ static inline void stackShrink()
 	memcpy(jobsNew, jobs, sizeof(struct job) * next);
 	arr_len /= 2;
 
+	free(jobs);
 	jobs = jobsNew;
 }
 
