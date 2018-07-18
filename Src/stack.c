@@ -11,6 +11,8 @@
 
 #include "stack.h"
 
+#define STACK_INIT_ARR_LEN 128
+
 /* The stack is stored as an array
  *
  * When next == 0, the stack is empty. If next == arr_len, then the array is
@@ -31,31 +33,37 @@ void stackPURGE()
 	next = 0;
 }
 
+//Initialize the stack if necessary
+static inline void stackInitialize()
+{
+	if (jobs == NULL) {
+		arr_len = STACK_INIT_ARR_LEN;
+		jobs = malloc(sizeof(struct job) * arr_len);
+		next = 0;
+	}
+}
+
 void stackPush(struct job job)
 {
-	(void) job;
-	(void) arr_len;
-	(void) next;
-	(void) jobs;
+	stackInitialize();
+	jobs[next] = job;
 	next++;
 }
 
 size_t stackSize()
 {
+	//Even pre-initialization the value of next is accurate
+	//stackInitialize();
 	return next;
 }
 
 struct job stackPop()
 {
 	next--;
-	struct job j;
-	j.cmd = NULL;
-	return j;
+	return jobs[next];
 }
 
 struct job stackPeek()
 {
-	struct job j;
-	j.cmd = NULL;
-	return j;
+	return jobs[next - 1];
 }

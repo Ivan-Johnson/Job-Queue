@@ -13,12 +13,13 @@
 
 void setUp()
 {
-	//NOP
+	TEST_ASSERT_EQUAL_INT(0, stackSize());
 }
 
 void tearDown()
 {
 	stackPURGE();
+	TEST_ASSERT_EQUAL_INT(0, stackSize());
 }
 
 void testWatchSize()
@@ -47,4 +48,20 @@ void testWatchSize()
 	TEST_ASSERT_EQUAL_INT(1, stackSize());
 	stackPop();
 	TEST_ASSERT_EQUAL_INT(0, stackSize());
+}
+
+void testStoredJobs()
+{
+	struct job job0, job1;
+	job0.cmd = "iowelkjm,ncvxsd";
+	job1.cmd = "oiuwelrkjmncxvw";
+
+	stackPush(job0);
+	stackPush(job1);
+
+	TEST_ASSERT_TRUE(stackPeek().cmd == job1.cmd);
+	TEST_ASSERT_TRUE(stackPop().cmd == job1.cmd);
+
+	TEST_ASSERT_TRUE(stackPeek().cmd == job0.cmd);
+	TEST_ASSERT_TRUE(stackPop().cmd == job0.cmd);
 }
