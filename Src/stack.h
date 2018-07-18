@@ -23,6 +23,7 @@ struct job stackPeek();
 
 #ifdef TEST
 void stackPURGE();
+size_t stackCurCapacity();
 #endif
 
 #endif

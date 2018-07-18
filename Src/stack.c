@@ -8,6 +8,7 @@
  * LICENSE: GPL 2.0
  */
 #include <stdlib.h>
+#include <string.h>
 
 #include "stack.h"
 
@@ -33,6 +34,11 @@ void stackPURGE()
 	next = 0;
 }
 
+size_t stackCurCapacity()
+{
+	return arr_len;
+}
+
 //Initialize the stack if necessary
 static inline void stackInitialize()
 {
@@ -43,9 +49,22 @@ static inline void stackInitialize()
 	}
 }
 
+static inline void stackGrow()
+{
+	struct job *jobsNew = malloc(sizeof(struct job) * arr_len * 2);
+
+	memcpy(jobsNew, jobs, sizeof(struct job) * arr_len);
+	arr_len *= 2;
+
+	jobs = jobsNew;
+}
+
 void stackPush(struct job job)
 {
 	stackInitialize();
+	if (next == arr_len) {
+		stackGrow();
+	}
 	jobs[next] = job;
 	next++;
 }

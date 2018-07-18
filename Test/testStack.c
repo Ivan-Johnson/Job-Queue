@@ -65,3 +65,45 @@ void testStoredJobs()
 	TEST_ASSERT_TRUE(stackPeek().cmd == job0.cmd);
 	TEST_ASSERT_TRUE(stackPop().cmd == job0.cmd);
 }
+
+void testGrowth()
+{
+	struct job job0, job1, job2, job3, job4, job5;
+	job0.cmd = "0";
+	job1.cmd = "1";
+	job2.cmd = "2";
+	job3.cmd = "3";
+	job4.cmd = "4";
+	job5.cmd = "5";
+
+	stackPush(job0);
+	size_t cap = stackCurCapacity();
+	for (size_t size = 1; size < cap - 2; size++) {
+		stackPush(job0);
+	}
+	TEST_ASSERT_EQUAL_INT(cap, stackCurCapacity());
+	TEST_ASSERT_EQUAL_INT(cap - 2, stackSize());
+
+	stackPush(job1);
+	TEST_ASSERT_EQUAL_INT(cap, stackCurCapacity());
+
+	stackPush(job2);
+	TEST_ASSERT_EQUAL_INT(cap, stackCurCapacity());
+	TEST_ASSERT_EQUAL_INT(cap, stackSize());
+
+	stackPush(job3);
+	TEST_ASSERT_TRUE(stackCurCapacity() > cap);
+	TEST_ASSERT_EQUAL_INT(cap + 1, stackSize());
+
+	stackPush(job4);
+	stackPush(job5);
+	TEST_ASSERT_TRUE(stackCurCapacity() > cap);
+	TEST_ASSERT_EQUAL_INT(cap + 3, stackSize());
+
+	TEST_ASSERT_TRUE(stackPop().cmd == job5.cmd);
+	TEST_ASSERT_TRUE(stackPop().cmd == job4.cmd);
+	TEST_ASSERT_TRUE(stackPop().cmd == job3.cmd);
+	TEST_ASSERT_TRUE(stackPop().cmd == job2.cmd);
+	TEST_ASSERT_TRUE(stackPop().cmd == job1.cmd);
+	TEST_ASSERT_TRUE(stackPop().cmd == job0.cmd);
+}
