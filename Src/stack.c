@@ -18,8 +18,18 @@
  *
  * Index 0 is the oldest item, index (next-1) is the most recent.
  */
-static struct job *jobs;
-static size_t arr_len, next;
+static struct job *jobs = NULL;
+static size_t arr_len = 0, next = 0;
+
+void stackPURGE()
+{
+	if (jobs != NULL) {
+		free(jobs);
+		jobs = NULL;
+	}
+	arr_len = 0;
+	next = 0;
+}
 
 void stackPush(struct job job)
 {
@@ -27,20 +37,25 @@ void stackPush(struct job job)
 	(void) arr_len;
 	(void) next;
 	(void) jobs;
-	exit(1);
+	next++;
 }
 
 size_t stackSize()
 {
-	exit(1);
+	return next;
 }
 
 struct job stackPop()
 {
-	exit(1);
+	next--;
+	struct job j;
+	j.cmd = NULL;
+	return j;
 }
 
 struct job stackPeek()
 {
-	exit(1);
+	struct job j;
+	j.cmd = NULL;
+	return j;
 }

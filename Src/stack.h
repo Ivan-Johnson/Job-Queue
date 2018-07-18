@@ -17,4 +17,8 @@ size_t stackSize();
 struct job stackPop();
 struct job stackPeek();
 
+#ifdef TEST
+void stackPURGE();
+#endif
+
 #endif
