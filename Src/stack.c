@@ -8,8 +8,11 @@
  * LICENSE: GPL 2.0
  */
 #include <stdlib.h>
+#include <string.h>
 
 #include "stack.h"
+
+#define STACK_INIT_ARR_LEN 128
 
 /* The stack is stored as an array
  *
@@ -18,29 +21,84 @@
  *
  * Index 0 is the oldest item, index (next-1) is the most recent.
  */
-static struct job *jobs;
-static size_t arr_len, next;
+static struct job *jobs = NULL;
+static size_t arr_len = 0, next = 0;
+
+void stackFree()
+{
+	if (jobs != NULL) {
+		free(jobs);
+		jobs = NULL;
+	}
+	arr_len = 0;
+	next = 0;
+}
+
+size_t stackCurCapacity()
+{
+	return arr_len;
+}
+
+//Initialize the stack if necessary
+static inline void stackInitialize()
+{
+	if (jobs == NULL) {
+		arr_len = STACK_INIT_ARR_LEN;
+		jobs = malloc(sizeof(struct job) * arr_len);
+		next = 0;
+	}
+}
+
+static inline void stackGrow()
+{
+	struct job *jobsNew = malloc(sizeof(struct job) * arr_len * 2);
+
+	memcpy(jobsNew, jobs, sizeof(struct job) * arr_len);
+	arr_len *= 2;
+
+	free(jobs);
+	jobs = jobsNew;
+}
+
+static inline void stackShrink()
+{
+	struct job *jobsNew = malloc(sizeof(struct job) * arr_len / 2);
+
+	memcpy(jobsNew, jobs, sizeof(struct job) * next);
+	arr_len /= 2;
+
+	free(jobs);
+	jobs = jobsNew;
+}
 
 void stackPush(struct job job)
 {
-	(void) job;
-	(void) arr_len;
-	(void) next;
-	(void) jobs;
-	exit(1);
+	stackInitialize();
+	if (next == arr_len) {
+		stackGrow();
+	}
+	jobs[next] = job;
+	next++;
 }
 
 size_t stackSize()
 {
-	exit(1);
+	//Even pre-initialization the value of next is accurate
+	//stackInitialize();
+	return next;
 }
 
 struct job stackPop()
 {
-	exit(1);
+	next--;
+	struct job ret = jobs[next];
+	if (next == arr_len / 4) {
+		stackShrink();
+	}
+	return ret;
 }
 
 struct job stackPeek()
 {
-	exit(1);
+	return jobs[next - 1];
 }

@@ -14,7 +14,17 @@
 
 void stackPush(struct job job);
 size_t stackSize();
+
+//Behavior is undefined if there is nothing on the stack
 struct job stackPop();
+
+//Behavior is undefined if there is nothing on the stack
 struct job stackPeek();
+
+void stackFree();
+
+#ifdef TEST
+size_t stackCurCapacity();
+#endif
 
 #endif
