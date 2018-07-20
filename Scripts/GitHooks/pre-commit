@@ -43,7 +43,7 @@ else
 	VALID_TEST=$([ "$VALID_BUILD" = 0 ] && make -j test > /dev/null; echo $?)
 	if [ "$VALID_TEST" != "0" ]; then
 		code=1;
-		ECHO "#THIS COMMIT DOES NOT PASS ALL TESTS!"
+		echo "#THIS COMMIT DOES NOT PASS ALL TESTS!"
 	fi
 fi
 
