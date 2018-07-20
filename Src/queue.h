@@ -16,5 +16,6 @@ void queueEnqueue(struct job);
 size_t queueSize();
 struct job queueDequeue();
 struct job queuePeek();
+void queueFree();
 
 #endif

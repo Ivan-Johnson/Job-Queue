@@ -14,7 +14,8 @@
 //we store the array in a circular array.
 
 //old is the item that will come off next. New is the index after the item that
-//was most recently put on. Valid indicies are old, index(old+1), .. index(new-1)
+//was most recently put on. The indicies that currently hold data are:
+//old, index(old+1), … index(new-1)
 
 //if new==old, the queue is empty
 
@@ -27,8 +28,29 @@
 //NOTE: two indicies of the array are wasted. Index zero and the cell at new.
 //So the queue can store arr_len - 2 values without needing to be enlarged.
 
-static struct job *jobs;
-static size_t arr_len, old, new;
+#define QUEUE_MIN_SIZE 128
+static struct job *jobs = NULL;
+static size_t arr_len = 0, old = 0, new = 0;
+
+void queueFree()
+{
+	if (jobs != NULL) {
+		free(jobs);
+	}
+	arr_len = 0;
+	old = 1;
+	new = 1;
+}
+
+static inline void queueInitialize()
+{
+	if (jobs == NULL) {
+		arr_len = QUEUE_MIN_SIZE;
+		jobs = malloc(sizeof(struct job) * arr_len);
+		old = 1;
+		new = 1;
+	}
+}
 
 /*
  * Map values in the range [0, arr_len] back to the valid index range
@@ -53,22 +75,24 @@ static size_t index(size_t pseudoindex)
 void queueEnqueue(struct job job)
 {
 	(void) job;
-	(void) index;
-        (void) jobs;
-	(void) arr_len;
-	(void) old;
-	(void) new;
-	exit(1);
+	queueInitialize();
+	new = index(new + 1);
 }
 
 size_t queueSize()
 {
-	exit(1);
+	//subtract two because index zero and index new are empty
+	size_t true_new = (new < old) ? (new + arr_len - 2) : new;
+	return true_new - old;
 }
 
 struct job queueDequeue()
 {
-	exit(1);
+	queueInitialize();
+	new = index(new - 1);
+	struct job j;
+	j.cmd = NULL;
+	return j;
 }
 
 struct job queuePeek()
