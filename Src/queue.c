@@ -74,8 +74,8 @@ static size_t index(size_t pseudoindex)
 
 void queueEnqueue(struct job job)
 {
-	(void) job;
 	queueInitialize();
+	jobs[new] = job;
 	new = index(new + 1);
 }
 
@@ -97,5 +97,5 @@ struct job queueDequeue()
 
 struct job queuePeek()
 {
-	exit(1);
+	return jobs[index(new - 1)];
 }
