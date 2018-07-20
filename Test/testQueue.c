@@ -106,6 +106,34 @@ void testPeek0()
 		queueEnqueue(jobs[x]);
 		TEST_ASSERT_TRUE(queuePeek().cmd == jobs[x].cmd);
 	}
+	TEST_ASSERT_EQUAL_INT(jobc, queueSize());
+	for (size_t x = jobc - 1; x != SIZE_MAX; x--) { // deliberate underflow
+		TEST_ASSERT_TRUE(queuePeek().cmd == jobs[x].cmd);
+		queueDequeue();
+	}
+	TEST_ASSERT_EQUAL_INT(0, queueSize());
+}
 
-	//TODO dequeue
+/*
+ * Test trivial dequeue operations
+ */
+void testDequeue()
+{
+	struct job job0, job1, job2, job3, job4;
+	job0.cmd = "0";
+	job1.cmd = "1";
+	job2.cmd = "2";
+	job3.cmd = "3";
+	job4.cmd = "4";
+	struct job jobs[] = {job0, job1, job2, job3, job4};
+	size_t jobc = 5;
+
+	for (size_t x = 0; x < jobc; x++) {
+		queueEnqueue(jobs[x]);
+	}
+	TEST_ASSERT_EQUAL_INT(jobc, queueSize());
+	for (size_t x = jobc - 1; x != SIZE_MAX; x--) { // deliberate underflow
+		TEST_ASSERT_TRUE(queueDequeue().cmd == jobs[x].cmd);
+	}
+	TEST_ASSERT_EQUAL_INT(0, queueSize());
 }

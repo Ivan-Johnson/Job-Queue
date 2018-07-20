@@ -88,11 +88,8 @@ size_t queueSize()
 
 struct job queueDequeue()
 {
-	queueInitialize();
 	new = index(new - 1);
-	struct job j;
-	j.cmd = NULL;
-	return j;
+	return jobs[new];
 }
 
 struct job queuePeek()
