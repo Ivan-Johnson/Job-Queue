@@ -104,10 +104,10 @@ void testPeek0()
 
 	for (size_t x = 0; x < jobc; x++) {
 		queueEnqueue(jobs[x]);
-		TEST_ASSERT_TRUE(queuePeek().cmd == jobs[x].cmd);
+		TEST_ASSERT_TRUE(queuePeek().cmd == jobs[0].cmd);
 	}
 	TEST_ASSERT_EQUAL_INT(jobc, queueSize());
-	for (size_t x = jobc - 1; x != SIZE_MAX; x--) { // deliberate underflow
+	for (size_t x = 0; x < jobc; x++) {
 		TEST_ASSERT_TRUE(queuePeek().cmd == jobs[x].cmd);
 		queueDequeue();
 	}
@@ -132,7 +132,7 @@ void testDequeue()
 		queueEnqueue(jobs[x]);
 	}
 	TEST_ASSERT_EQUAL_INT(jobc, queueSize());
-	for (size_t x = jobc - 1; x != SIZE_MAX; x--) { // deliberate underflow
+	for (size_t x = 0; x < jobc; x++) {
 		TEST_ASSERT_TRUE(queueDequeue().cmd == jobs[x].cmd);
 	}
 	TEST_ASSERT_EQUAL_INT(0, queueSize());

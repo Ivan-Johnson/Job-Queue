@@ -88,11 +88,12 @@ size_t queueSize()
 
 struct job queueDequeue()
 {
-	new = index(new - 1);
-	return jobs[new];
+	struct job job = jobs[old];
+	old = index(old + 1);
+	return job;
 }
 
 struct job queuePeek()
 {
-	return jobs[index(new - 1)];
+	return jobs[index(old)];
 }
