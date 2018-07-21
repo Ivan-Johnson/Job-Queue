@@ -19,13 +19,7 @@ License GPLv2.0: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html\n\
 This software comes with no warranty, to the extent permitted by applicable law";
 const char *argp_program_bug_address = "<git@IvanJohnson.net>";
 static char doc[] = "Jörmungandr -- a tool running a queue of jobs";
-static char args_doc[] = "";
-
-static struct argp_option options[] = {
-	{"server",  's', "server", 0,  "Start the specified server", 0 },
-	{"run",     'r', "cmd",    0,  "Run the specified command",  0 },
-	{ 0,         0,   0,       0,   0,                           0 }
-};
+static char args_doc[] = "server [command]";
 
 static error_t parse_opt (int key, char *arg, struct argp_state *state)
 {
@@ -33,11 +27,19 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 
 	switch (key)
 	{
-	case 's':
-		arguments->server = arg;
+	case ARGP_KEY_ARG:
+		if (state->arg_num == 0) {
+			arguments->server = arg;
+		} else if (state->arg_num == 1) {
+			arguments->cmd = arg;
+		} else {
+			return ARGP_ERR_UNKNOWN;
+		}
 		break;
-	case 'r':
-		arguments->cmd = arg;
+	case ARGP_KEY_END:
+		if (state->arg_num == 0) {
+			argp_usage(state);
+		}
 		break;
 	default:
 		return ARGP_ERR_UNKNOWN;
@@ -48,7 +50,7 @@ static error_t parse_opt (int key, char *arg, struct argp_state *state)
 	return 0;
 }
 
-static struct argp argp = { options, parse_opt, args_doc, doc, 0, 0, 0 };
+static struct argp argp = { 0, parse_opt, args_doc, doc, 0, 0, 0 };
 
 struct arguments parseArgs(int argc, char **argv)
 {
