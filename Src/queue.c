@@ -32,6 +32,11 @@
 static struct job *jobs = NULL;
 static size_t arr_len = 0, old = 0, new = 0;
 
+size_t queueCurCapacity()
+{
+	return arr_len - 2;
+}
+
 void queueFree()
 {
 	if (jobs != NULL) {
@@ -73,9 +78,27 @@ static size_t index(size_t pseudoindex)
 	}
 }
 
+static void queueGrow()
+{
+	struct job *arrOld = jobs;
+	jobs = malloc(sizeof(struct job) * arr_len * 2);
+
+	size_t newNew = 1;
+	for (size_t x = old; x != new; x = index(x + 1), newNew++) {
+		jobs[newNew] = arrOld[x];
+	}
+	new = newNew;
+	old = 1;
+	// We can't update arr_len until after the loop, because index uses it
+	arr_len *= 2;
+}
+
 void queueEnqueue(struct job job)
 {
 	queueInitialize();
+	if (old == index(new + 1)) { //queue is full
+		queueGrow();
+	}
 	jobs[new] = job;
 	new = index(new + 1);
 }

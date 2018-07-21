@@ -18,4 +18,8 @@ struct job queueDequeue();
 struct job queuePeek();
 void queueFree();
 
+#ifdef TEST
+size_t queueCurCapacity();
+#endif
+
 #endif
