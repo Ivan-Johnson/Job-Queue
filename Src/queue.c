@@ -82,8 +82,19 @@ void queueEnqueue(struct job job)
 size_t queueSize()
 {
 	//subtract two because index zero and index new are empty
-	size_t true_new = (new < old) ? (new + arr_len - 2) : new;
-	return true_new - old;
+	if (old <= new) { // The queue is not wrapped
+		return new - old;
+	} else { //end of queue loops back to start of the array
+		// the total number of cells in the array, if we ignore index 0
+		size_t num_cells = arr_len - 1;
+
+		// the number of empty cells in the array:
+		// [new, old)
+		size_t num_empty = old - new;
+
+		return num_cells - num_empty;
+	}
+	exit(1);
 }
 
 struct job queueDequeue()
