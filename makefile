@@ -39,7 +39,7 @@ CFLAGS += -Wfatal-errors -std=c99 -Werror -Wconversion -Wall -Wextra -pedantic -
 
 
 
-BUILD_TYPE ?= develop
+BUILD_TYPE ?= debug
 ifeq ($(BUILD_TYPE), debug)
 	CFLAGS += -D DEBUG -O0 -ggdb -fno-inline -fsanitize=address -fsanitize=leak -fsanitize=undefined
 	LDLIBS += -lasan -lubsan
