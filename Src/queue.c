@@ -8,13 +8,15 @@
  * LICENSE: GPL 2.0
  */
 #include <stdlib.h>
+#include <assert.h>
 
 #include "server.h"
 
 //we store the array in a circular array.
 
 //old is the item that will come off next. New is the index after the item that
-//was most recently put on. Valid indicies are old, index(old+1), .. index(new-1)
+//was most recently put on. The indicies that currently hold data are:
+//old, index(old+1), … index(new-1)
 
 //if new==old, the queue is empty
 
@@ -27,8 +29,35 @@
 //NOTE: two indicies of the array are wasted. Index zero and the cell at new.
 //So the queue can store arr_len - 2 values without needing to be enlarged.
 
-static struct job *jobs;
-static size_t arr_len, old, new;
+#define QUEUE_MIN_SIZE 128
+static struct job *jobs = NULL;
+static size_t arr_len = 0, old = 0, new = 0;
+
+size_t queueCurCapacity()
+{
+	return arr_len - 2;
+}
+
+void queueFree()
+{
+	if (jobs != NULL) {
+		free(jobs);
+		jobs = NULL;
+	}
+	arr_len = 0;
+	old = 1;
+	new = 1;
+}
+
+static inline void queueInitialize()
+{
+	if (jobs == NULL) {
+		arr_len = QUEUE_MIN_SIZE;
+		jobs = malloc(sizeof(struct job) * arr_len);
+		old = 1;
+		new = 1;
+	}
+}
 
 /*
  * Map values in the range [0, arr_len] back to the valid index range
@@ -50,28 +79,86 @@ static size_t index(size_t pseudoindex)
 	}
 }
 
+static void queueGrow()
+{
+	struct job *arrOld = jobs;
+	jobs = malloc(sizeof(struct job) * arr_len * 2);
+
+	size_t newNew = 1;
+	for (size_t x = old; x != new; x = index(x + 1), newNew++) {
+		jobs[newNew] = arrOld[x];
+	}
+	new = newNew;
+	old = 1;
+	// We can't update arr_len until after the loop, because index uses it
+	arr_len *= 2;
+
+	free(arrOld);
+}
+
 void queueEnqueue(struct job job)
 {
-	(void) job;
-	(void) index;
-        (void) jobs;
-	(void) arr_len;
-	(void) old;
-	(void) new;
-	exit(1);
+	queueInitialize();
+	if (old == index(new + 1)) { //queue is full
+		queueGrow();
+	}
+	jobs[new] = job;
+	new = index(new + 1);
 }
 
 size_t queueSize()
 {
+	//subtract two because index zero and index new are empty
+	if (old <= new) { // The queue is not wrapped
+		return new - old;
+	} else { //end of queue loops back to start of the array
+		// the total number of cells in the array, if we ignore index 0
+		size_t num_cells = arr_len - 1;
+
+		// the number of empty cells in the array:
+		// [new, old)
+		size_t num_empty = old - new;
+
+		return num_cells - num_empty;
+	}
 	exit(1);
+}
+
+static inline void queueShrink()
+{
+	size_t newSize = arr_len / 2;
+	if (newSize < QUEUE_MIN_SIZE) {
+		return;
+	}
+
+	struct job *arrOld = jobs;
+	jobs = malloc(sizeof(struct job) * newSize);
+
+	size_t newNew = 1;
+	for (size_t x = old; x != new; x = index(x + 1), newNew++) {
+		jobs[newNew] = arrOld[x];
+	}
+	new = newNew;
+	old = 1;
+	// We can't update arr_len until after the loop, because index uses it
+	arr_len = newSize;
+
+	assert(new < arr_len);
+
+	free(arrOld);
 }
 
 struct job queueDequeue()
 {
-	exit(1);
+	struct job job = jobs[old];
+	old = index(old + 1);
+	if (queueSize() < arr_len / 4) {
+		queueShrink();
+	}
+	return job;
 }
 
 struct job queuePeek()
 {
-	exit(1);
+	return jobs[index(old)];
 }
