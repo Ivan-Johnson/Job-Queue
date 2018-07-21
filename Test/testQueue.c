@@ -168,3 +168,37 @@ void testGrow()
 	}
 #undef JOBC
 }
+
+/*
+ * Ensure that the queue shrinks properly
+ */
+void testShrinkage()
+{
+	TEST_ASSERT_EQUAL_INT(0, queueSize());
+	size_t cap = queueCurCapacity();
+
+#define JOBC 300
+	TEST_ASSERT_TRUE(JOBC > cap + 5);
+	struct job jobs[JOBC];
+	for(int x = 0; x < JOBC; x++) {
+		jobs[x].cmd = malloc(sizeof(char));
+		TEST_ASSERT_TRUE_MESSAGE(jobs[x].cmd,
+					"We ran out of memory while testing?");
+	}
+
+	for (size_t x = 0; x <= cap; x++) {
+		queueEnqueue(jobs[x]);
+	}
+	TEST_ASSERT_TRUE(cap < queueCurCapacity());
+	TEST_ASSERT_EQUAL_INT(cap+1, queueSize());
+
+	for (size_t x = 0; x <= cap; x++) {
+		TEST_ASSERT_TRUE(jobs[x].cmd == queueDequeue().cmd);
+	}
+	TEST_ASSERT_EQUAL_INT(0, queueSize());
+	// NOTE: the queue's default size is it's minimum size;
+	// so even though it's not storying anything right now,
+	// it should not have shrunk below it's origional size.
+	TEST_ASSERT_TRUE(cap == queueCurCapacity());
+#undef JOBC
+}

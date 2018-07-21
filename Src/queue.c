@@ -8,6 +8,7 @@
  * LICENSE: GPL 2.0
  */
 #include <stdlib.h>
+#include <assert.h>
 
 #include "server.h"
 
@@ -121,10 +122,35 @@ size_t queueSize()
 	exit(1);
 }
 
+static inline void queueShrink()
+{
+	size_t newSize = arr_len / 2;
+	if (newSize < QUEUE_MIN_SIZE) {
+		return;
+	}
+
+	struct job *arrOld = jobs;
+	jobs = malloc(sizeof(struct job) * newSize);
+
+	size_t newNew = 1;
+	for (size_t x = old; x != new; x = index(x + 1), newNew++) {
+		jobs[newNew] = arrOld[x];
+	}
+	new = newNew;
+	old = 1;
+	// We can't update arr_len until after the loop, because index uses it
+	arr_len = newSize;
+
+	assert(new < arr_len);
+}
+
 struct job queueDequeue()
 {
 	struct job job = jobs[old];
 	old = index(old + 1);
+	if (queueSize() < arr_len / 4) {
+		queueShrink();
+	}
 	return job;
 }
 
