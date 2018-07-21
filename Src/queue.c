@@ -92,6 +92,8 @@ static void queueGrow()
 	old = 1;
 	// We can't update arr_len until after the loop, because index uses it
 	arr_len *= 2;
+
+	free(arrOld);
 }
 
 void queueEnqueue(struct job job)
@@ -142,6 +144,8 @@ static inline void queueShrink()
 	arr_len = newSize;
 
 	assert(new < arr_len);
+
+	free(arrOld);
 }
 
 struct job queueDequeue()

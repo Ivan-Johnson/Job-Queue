@@ -200,5 +200,9 @@ void testShrinkage()
 	// so even though it's not storying anything right now,
 	// it should not have shrunk below it's origional size.
 	TEST_ASSERT_TRUE(cap == queueCurCapacity());
+
+	for(size_t x = 0; x < JOBC; x++) {
+		free(jobs[x].cmd);
+	}
 #undef JOBC
 }
