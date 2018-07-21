@@ -36,6 +36,7 @@ void queueFree()
 {
 	if (jobs != NULL) {
 		free(jobs);
+		jobs = NULL;
 	}
 	arr_len = 0;
 	old = 1;
