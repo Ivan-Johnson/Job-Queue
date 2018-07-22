@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <argp.h>
 
+#include "server.h"
 #include "jormungandr.h"
 
 const char *argp_program_version = "\
@@ -65,6 +66,30 @@ int fulfilArgs(struct arguments args)
 {
 	printf("Server is %s\n", args.server);
 	printf("cmd is %s\n", args.cmd);
+
+	enum serverState ss = serverStatus(args.server);
+	char *sss;
+	switch (ss) {
+	case unknown:
+		sss = "unknown";
+		break;
+	case invalid:
+		sss = "invalid";
+		break;
+	case stopped:
+		sss = "stopped";
+		break;
+	case running:
+		sss = "running";
+		break;
+	case error:
+		sss = "error";
+		break;
+	default:
+		sss = NULL;
+		break;
+	}
+	printf("server state is %s\n", sss);
 	return 0;
 }
 

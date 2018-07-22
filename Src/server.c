@@ -11,17 +11,51 @@
 #include <sys/queue.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
+#include "messenger.h"
 #include "server.h"
 
-enum serverState serverStatus(char *serverDir)
+enum serverState serverStatus(const char *serverDir)
 {
-	exit(1);
-	(void) serverDir;
-	//check that the dir exists with appropriate permissions
-	//check that the pid specified in serverDir is running and matches:
-	//        command name
-	//        user
+	// TODO race condition attacks w/ symlinks are possible.
+	// Fix before release.
+	struct stat st;
+	int ret;
+	//would changing this to lstat help? see man 3 fstatat
+	ret = stat(serverDir, &st);
+	if (ret != 0) {
+		return invalid;
+	}
+	if (st.st_uid != geteuid()) { //user doesn't own the server
+		return invalid;
+	}
+	mode_t mode = st.st_mode;
+	//only look at user/group/other's read/write/execute perms
+	mode = mode & (S_IRWXU | S_IRWXG | S_IRWXO);
+	if (mode != S_IRWXU) {
+		return invalid;
+	}
+
+	ret = chdir(serverDir);
+	if (ret != 0) {
+		return error;
+	}
+
+	int fd = open(SFILE_FIFO, O_WRONLY | O_NONBLOCK);
+	if (fd >= 0) { // somebody is listening to the fifo
+		ret = close(fd);
+		if (ret != 0) {
+			return error;
+		}
+		return running;
+	} else {
+		return stopped;
+	}
 }
 
 
