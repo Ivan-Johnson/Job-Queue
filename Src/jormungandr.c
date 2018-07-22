@@ -6,12 +6,12 @@
  * LICENSE: GPL 2.0
  */
 
+#include <argp.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <argp.h>
 
-#include "server.h"
 #include "jormungandr.h"
+#include "server.h"
 
 const char *argp_program_version = "\
 Jörmungandr v0.1.0-alpha\n\

@@ -7,8 +7,8 @@
  *
  * LICENSE: GPL 2.0
  */
-#include <stdlib.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "server.h"
 

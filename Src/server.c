@@ -8,11 +8,11 @@
  * LICENSE: GPL 2.0
  */
 
-#include <sys/queue.h>
-#include <stdlib.h>
-#include <string.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/queue.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
