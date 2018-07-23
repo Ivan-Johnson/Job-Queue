@@ -88,9 +88,9 @@ bool serverClose(bool killRunning)
 	//return !serverRunning
 }
 
-void serverMain(char *serverDir)
+void serverMain(int serverfd)
 {
-	(void) serverDir;
+	(void) serverfd;
 	exit(1);
 	/*while (shouldRun) {
 		wait(); // reader thread can wake us

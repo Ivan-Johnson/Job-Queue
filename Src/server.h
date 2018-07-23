@@ -28,7 +28,7 @@ enum serverState {
 //fifo will be opened for reading.
 #define SFILE_FIFO "fifo"
 
-void serverMain(char *serverDir);
+void serverMain(int serverfd);
 bool serverAddJob(struct job job);
 
 enum serverState serverStatus(int serverfd);
