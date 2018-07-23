@@ -168,7 +168,10 @@ void testSSbadfifo()
 	runSStest(true,  true,  true,  false, true,  invalid);
 }
 
-
+void testSSnofifo()
+{
+	runSStest(true,  true,  false, true,  false,  invalid);
+}
 
 void testSSbadperms()
 {

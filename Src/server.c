@@ -60,7 +60,8 @@ enum serverState serverStatus(const char *serverDir)
 	} else {
 		if (errno == ENXIO) {
 			return stopped;
-		} else if (errno == EISDIR || errno == EACCES) {
+		} else if (errno == EISDIR || errno == EACCES
+			|| errno == ENOENT) {
 			return invalid;
 		} else {
 			return error;
