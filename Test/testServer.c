@@ -63,9 +63,9 @@ freecmd:
 #undef FORMAT
 }
 
-static int setupServerStatusTest(char *serverDir, bool serverDirExists,
-			bool validPerms, bool mkFIFOfile,
-			bool mkFIFOFIFO)
+static int setupServerStatusTest(char *serverDir, int *serverfd,
+				bool serverDirExists, bool validPerms,
+				bool mkFIFOfile, bool mkFIFOFIFO)
 {
 	int status = rmrf(serverDir);
 	if (!serverDirExists || status) {
@@ -78,18 +78,18 @@ static int setupServerStatusTest(char *serverDir, bool serverDirExists,
 		return 1;
 	}
 
-	int serverfd = open(serverDir, O_RDONLY);
-	if (serverfd == -1) {
+	*serverfd = open(serverDir, O_RDONLY);
+	if (*serverfd == -1) {
 		return 1;
 	}
 	if (mkFIFOfile) {
 		if (mkFIFOFIFO) {
-			status = mkfifoat(serverfd, SFILE_FIFO, S_IRWXU);
+			status = mkfifoat(*serverfd, SFILE_FIFO, S_IRWXU);
 			if (!status) {
 				return status;
 			}
 		} else {
-			int fd = openat(serverfd, SFILE_FIFO,
+			int fd = openat(*serverfd, SFILE_FIFO,
 				O_WRONLY|O_CREAT, S_IRWXU | S_IRWXG);
 			if (fd == -1) {
 				return 1;
@@ -104,20 +104,10 @@ static int setupServerStatusTest(char *serverDir, bool serverDirExists,
 	return 0;
 }
 
-static int openFIFORead(const char *serverDir, int *fd)
+static int openFIFORead(int serverfd, int *fd)
 {
-	int serverfd = open(serverDir, O_RDONLY);
-	if (serverfd == -1) {
-		return 1;
-	}
 	*fd = openat(serverfd, SFILE_FIFO, O_RDONLY | O_NONBLOCK);
 	if (*fd == -1) {
-		close(serverfd);
-		return 1;
-	}
-	int status = close(serverfd);
-	if (status) {
-		close(*fd);
 		return 1;
 	}
 	return 0;
@@ -128,8 +118,9 @@ void runSStest(bool serverDirExists, bool validPerms, bool mkFIFOfile,
 {
 
 	int status;
-	status = setupServerStatusTest(SDIR, serverDirExists, validPerms,
-				mkFIFOfile, mkFIFOFIFO);
+	int serverfd;
+	status = setupServerStatusTest(SDIR, &serverfd, serverDirExists,
+				validPerms, mkFIFOfile, mkFIFOFIFO);
 	if (status) {
 		TEST_IGNORE_MESSAGE("Failed to create the serverdir");
 		return;
@@ -137,8 +128,9 @@ void runSStest(bool serverDirExists, bool validPerms, bool mkFIFOfile,
 
 	int fifofd;
 	if (read) {
-		status = openFIFORead(SDIR, &fifofd);
+		status = openFIFORead(serverfd, &fifofd);
 		if (status) {
+			close(serverfd);
 			TEST_IGNORE_MESSAGE("Could not open FIFO");
 			return;
 		}
@@ -149,14 +141,14 @@ void runSStest(bool serverDirExists, bool validPerms, bool mkFIFOfile,
 	if (mkFIFOfile && read) {
 		status = close(fifofd);
 		if (status) {
+			close(serverfd);
 			TEST_IGNORE_MESSAGE("Could not close FIFO");
 		}
 	}
 
+	close(serverfd);
 	TEST_ASSERT_EQUAL(expected, ss);
 }
-
-
 
 void testSSstopped()
 {
