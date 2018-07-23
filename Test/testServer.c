@@ -156,10 +156,19 @@ void runSStest(bool serverDirExists, bool validPerms, bool mkFIFOfile,
 	TEST_ASSERT_EQUAL(expected, ss);
 }
 
+
+
 void testSSstopped()
 {
 	runSStest(true,  true,  true,  true,  false, stopped);
 }
+
+void testSSbadfifo()
+{
+	runSStest(true,  true,  true,  false, true,  invalid);
+}
+
+
 
 void testSSbadperms()
 {

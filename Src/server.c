@@ -9,6 +9,7 @@
  */
 
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,14 +47,24 @@ enum serverState serverStatus(const char *serverDir)
 	}
 
 	int fd = open(SFILE_FIFO, O_WRONLY | O_NONBLOCK);
-	if (fd >= 0) { // somebody is listening to the fifo
+	if (fd >= 0) {
+		if (!S_ISFIFO(fd)) {
+			close(fd);
+			return invalid;
+		}
 		ret = close(fd);
-		if (ret != 0) {
+		if (ret) {
 			return error;
 		}
 		return running;
 	} else {
-		return stopped;
+		if (errno == ENXIO) {
+			return stopped;
+		} else if (errno == EISDIR || errno == EACCES) {
+			return invalid;
+		} else {
+			return error;
+		}
 	}
 }
 
