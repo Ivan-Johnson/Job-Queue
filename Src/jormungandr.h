@@ -1,5 +1,5 @@
-#ifndef FOO_H
-#define FOO_H
+#ifndef JORMUNGANDR_H
+#define JORMUNGANDR_H
 /*
  * Src/jormungandr.h
  *
