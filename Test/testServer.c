@@ -110,7 +110,7 @@ static int openFIFORead(const char *serverDir, int *fd)
 	if (serverfd == -1) {
 		return 1;
 	}
-	*fd = openat(serverfd, serverDir, O_RDONLY | O_NONBLOCK);
+	*fd = openat(serverfd, SFILE_FIFO, O_RDONLY | O_NONBLOCK);
 	if (*fd == -1) {
 		close(serverfd);
 		return 1;
