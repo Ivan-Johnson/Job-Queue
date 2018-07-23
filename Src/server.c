@@ -22,11 +22,10 @@
 
 enum serverState serverStatus(const char *serverDir)
 {
-	// TODO race condition attacks w/ symlinks are possible.
-	// Fix before release.
+	// TODO race conditions exist. Are they harmful? Fix before release.
+	// using fstatat, openat, etc. should be sufficient.
 	struct stat st;
 	int ret;
-	//would changing this to lstat help? see man 3 fstatat
 	ret = stat(serverDir, &st);
 	if (ret != 0) {
 		return invalid;
