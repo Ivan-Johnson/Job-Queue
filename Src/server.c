@@ -44,7 +44,11 @@ enum serverState serverStatus(int serverfd)
 
 	int fd = openat(serverfd, SFILE_FIFO, O_WRONLY | O_NONBLOCK);
 	if (fd >= 0) {
-		if (!S_ISFIFO(fd)) {
+		ret = fstat(fd, &st);
+		if (ret) {
+			return error;
+		}
+		if (!S_ISFIFO(st.st_mode)) {
 			close(fd);
 			return invalid;
 		}
