@@ -17,18 +17,20 @@ struct job {
 };
 
 enum serverState {
-	dne,     //* The specified dir does not exist
-	invalid, //* e.g. dir exists, but with bad permissions
-	stopped, //* Server dir is valid, but process is not valid (note that
-	         //  the process could exist but be invalid if the computer
-	         //  reuses PIDs, e.g. it has rebooted)
+	unknown, //* unexpected state; should be impossible
+	invalid, //* e.g. dir does not exist, or has bad permissions
+	stopped, //* Server dir is valid, but server is not up
 	running, //* everything checks out
-	unknown  //* unexpected state; should be impossible
+	error    //* an error occured when checking the state
 };
 
-void serverMain(char *serverDir);
+//a fifo file that exists in serverdir. As long as the server is running, this
+//fifo will be opened for reading.
+#define SFILE_FIFO "fifo"
+
+void serverMain(int serverfd);
 bool serverAddJob(struct job job);
 
-enum serverState serverStatus(char *serverDir);
+enum serverState serverStatus(int serverfd);
 
 #endif

@@ -11,9 +11,9 @@
 
 #include "messenger.h"
 
-bool messengerSendJob(char *serverDir, struct job job)
+bool messengerSendJob(int serverfd, struct job job)
 {
-	(void) serverDir;
+	(void) serverfd;
 	(void) job;
 	exit(1);
 	//TODO:
@@ -22,8 +22,8 @@ bool messengerSendJob(char *serverDir, struct job job)
 	//write job to fifo
 }
 
-bool messengerInitialize(char *serverDir)
+bool messengerInitialize(int serverfd)
 {
-	(void) serverDir;
+	(void) serverfd;
 	exit(1);
 }
