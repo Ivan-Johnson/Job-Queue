@@ -27,9 +27,9 @@ enum serverState serverStatus(int serverfd)
 {
 	// TODO are there any remaining race conditions? (even if not harmful)
 	struct stat st;
-	int ret;
-	ret = fstatat(serverfd, ".", &st, 0);
-	if (ret != 0) {
+	int status;
+	status = fstatat(serverfd, ".", &st, 0);
+	if (status != 0) {
 		return invalid;
 	}
 	if (st.st_uid != geteuid()) { //user doesn't own the server
@@ -44,16 +44,16 @@ enum serverState serverStatus(int serverfd)
 
 	int fd = openat(serverfd, SFILE_FIFO, O_WRONLY | O_NONBLOCK);
 	if (fd >= 0) {
-		ret = fstat(fd, &st);
-		if (ret) {
+		status = fstat(fd, &st);
+		if (status) {
 			return error;
 		}
 		if (!S_ISFIFO(st.st_mode)) {
 			close(fd);
 			return invalid;
 		}
-		ret = close(fd);
-		if (ret) {
+		status = close(fd);
+		if (status) {
 			return error;
 		}
 		return running;
