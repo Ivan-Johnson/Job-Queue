@@ -31,6 +31,6 @@ enum serverState {
 void serverMain(char *serverDir);
 bool serverAddJob(struct job job);
 
-enum serverState serverStatus(const char *serverDir);
+enum serverState serverStatus(int serverfd);
 
 #endif

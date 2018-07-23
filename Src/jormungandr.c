@@ -7,6 +7,8 @@
  */
 
 #include <argp.h>
+#include <assert.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -67,7 +69,9 @@ int fulfilArgs(struct arguments args)
 	printf("Server is %s\n", args.server);
 	printf("cmd is %s\n", args.cmd);
 
-	enum serverState ss = serverStatus(args.server);
+	int sfd = open(args.server, O_RDONLY);
+	assert(sfd > 0);
+	enum serverState ss = serverStatus(sfd);
 	char *sss;
 	switch (ss) {
 	case unknown:

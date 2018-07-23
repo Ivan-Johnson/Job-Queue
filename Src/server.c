@@ -7,6 +7,8 @@
  *
  * LICENSE: GPL 2.0
  */
+//for fstatat
+#define _POSIX_C_SOURCE 200809L
 
 #include <dirent.h>
 #include <errno.h>
@@ -21,13 +23,12 @@
 #include "messenger.h"
 #include "server.h"
 
-enum serverState serverStatus(const char *serverDir)
+enum serverState serverStatus(int serverfd)
 {
-	// TODO race conditions exist. Are they harmful? Fix before release.
-	// using fstatat, openat, etc. should be sufficient.
+	// TODO are there any remaining race conditions? (even if not harmful)
 	struct stat st;
 	int ret;
-	ret = stat(serverDir, &st);
+	ret = fstatat(serverfd, ".", &st, 0);
 	if (ret != 0) {
 		return invalid;
 	}
@@ -41,12 +42,7 @@ enum serverState serverStatus(const char *serverDir)
 		return invalid;
 	}
 
-	ret = chdir(serverDir);
-	if (ret != 0) {
-		return error;
-	}
-
-	int fd = open(SFILE_FIFO, O_WRONLY | O_NONBLOCK);
+	int fd = openat(serverfd, SFILE_FIFO, O_WRONLY | O_NONBLOCK);
 	if (fd >= 0) {
 		if (!S_ISFIFO(fd)) {
 			close(fd);

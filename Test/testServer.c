@@ -136,7 +136,7 @@ void runSStest(bool serverDirExists, bool validPerms, bool mkFIFOfile,
 		}
 	}
 
-	enum serverState ss = serverStatus(SDIR);
+	enum serverState ss = serverStatus(serverfd);
 
 	if (mkFIFOfile && read) {
 		status = close(fifofd);
