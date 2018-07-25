@@ -81,7 +81,13 @@ $(BIN_DIR)/%.o: | $(BIN_DIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(DEPENDS): $(SOURCES) | $(BIN_DIR)
-	$(CC) $(CFLAGS) -MM $^ | sed -e 's!^!$(BIN_DIR)/!' >$@
+#"-MF $@" is not a viable alternative to writing the output to $@. In my tests,
+#using "-MF $@" resulted in only a single rule being written to $@, instead of
+#one for each file in $^
+	$(CC) $(CFLAGS) -MM $^ > $@
+#Find lines that start with something other than whitespace
+#then prepend $(BIN_DIR) to those lines
+	sed -i '\!^\S!s!^!$(BIN_DIR)/!' $@
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),CLEAN)
@@ -152,9 +158,22 @@ $(BIN_TESTRUNNER_DIR)/%_runner.o: | $(BIN_TESTRUNNER_DIR)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(TESTRUNNER_DEPENDS): $(BISECT_TEST_SRC) $(TEST_SOURCES_RUNNER) | $(BIN_TESTRUNNER_DIR)
-	$(CC) $(CFLAGS) -MM $^ | sed -e 's!^!$(BIN_TESTRUNNER_DIR)/!' >$@
+#"-MF $@" is not a viable alternative to writing the output to $@. In my tests,
+#using "-MF $@" resulted in only a single rule being written to $@, instead of
+#one for each file in $^
+	$(CC) $(CFLAGS) -MM $^ > $@
+#Find lines that start with something other than whitespace
+#then prepend $(BIN_TESTRUNNER_DIR) to those lines
+	sed -i '\!^\S!s!^!$(BIN_TESTRUNNER_DIR)/!' $@
+
 $(TESTCASE_DEPENDS): $(BISECT_TEST_SRC) $(TEST_SOURCES) | $(BIN_TEST_DIR)
-	$(CC) $(CFLAGS) -MM $^ | sed -e 's!^!$(BIN_TEST_DIR)/!' >$@
+#"-MF $@" is not a viable alternative to writing the output to $@. In my tests,
+#using "-MF $@" resulted in only a single rule being written to $@, instead of
+#one for each file in $^
+	$(CC) $(CFLAGS) -MM $^ > $@
+#Find lines that start with something other than whitespace
+#then prepend $(BIN_TEST_DIR) to those lines
+	sed -i '\!^\S!s!^!$(BIN_TEST_DIR)/!' $@
 
 -include $(TESTCASE_DEPENDS)
 -include $(TESTRUNNER_DEPENDS)
