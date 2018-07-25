@@ -8,8 +8,10 @@
  * LICENSE: GPL 2.0
  */
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "messenger.h"
+#include "server.h"
 
 bool messengerSendJob(struct server server, struct job job)
 {
@@ -38,7 +40,24 @@ int messengerGetServer(const char *path, struct server *server)
 		return 1;
 	}
 
-	//server is initialized properly; we just need to launch the server
-	puts("Just need to launch server now.");
-	return 255;
+        int pid = fork();
+        if (pid == -1) {
+		// TODO: close fd's in server
+                return 1;
+        } else if (pid != 0) {
+		// Origional process immediately returns successfully
+                return 0;
+        }
+
+	// As a child, we've inherited copies of all file descriptors, so we can
+	// use server without having to worry about the parent closing file
+	// descriptors
+	struct server svr = *server;
+
+        status = setsid();
+        if (status == -1) {
+                puts("BAD THINGS ARE HAPPENING!");
+                exit(1);
+        }
+        serverMain(svr); //never returns
 }

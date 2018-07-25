@@ -8,18 +8,21 @@
  * LICENSE: GPL 2.0
  */
 
-//for O_DIRECTORY
+//for O_DIRECTORY & dprintf
 #define _POSIX_C_SOURCE 200809L
 
 #include <errno.h>
-#include <string.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include "server.h"
 
+//TODO make these names consistent with SFILE_FIFO? or maybe not, because these
+//are not part of the public interface.
 #define LOG "log.txt"
 #define ERR "err.txt"
 
@@ -41,9 +44,22 @@ bool serverClose(bool killRunning)
 	//return !serverRunning
 }
 
-void serverMain(struct server server)
+__attribute__((noreturn)) void serverMain(struct server server)
 {
 	(void) server;
+	int fifo_read = openat(server.server, SFILE_FIFO, O_RDONLY | O_NONBLOCK);
+	if (fifo_read == -1) {
+		dprintf(server.err, "Could not open fifo for reading\n");
+		close(server.err);
+		close(server.log);
+		close(server.fifo);
+		exit(1);
+	}
+
+	while (1) {
+		dprintf(server.log, "Doing server loop\n");
+		sleep(3);
+	}
 	exit(1);
 	/*while (shouldRun) {
 		wait(); // reader thread can wake us
@@ -114,29 +130,29 @@ enum serverInitCode serverInitialize(const char *path, struct server *s)
 
 	int status;
 
-	int fd;
-	status = openServerDir(path, &fd);
+	status = openServerDir(path, &s->server);
 	if (status) {
 		goto fail_server;
 	}
 
-	s->log = openat(fd, LOG, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
+	s->log = openat(s->server, LOG, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
 	if (s->log == -1) {
 		goto fail_log;
 	}
 
-	s->err = openat(fd, ERR, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
+	s->err = openat(s->server, ERR, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
 	if (s->log == -1) {
 		goto fail_err;
 	}
 
-	return openFIFO(fd, SFILE_FIFO, &s->fifo);
+	//TODO close fd's if we can't open FIFO
+	return openFIFO(s->server, SFILE_FIFO, &s->fifo);
 
 	// close files in the reverse of the order they were aquired in
 fail_err:
 	close(s->log);
 fail_log:
-	close(fd);
+	close(s->server);
 fail_server:
 	return SIC_failed;
 }
