@@ -14,6 +14,6 @@
 #include "server.h"
 
 bool messengerSendJob(int serverfd, struct job job);
-bool messengerInitialize(int serverfd);
+int messengerGetServer(const char *path, int *server);
 
 #endif

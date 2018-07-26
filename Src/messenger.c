@@ -22,8 +22,9 @@ bool messengerSendJob(int serverfd, struct job job)
 	//write job to fifo
 }
 
-bool messengerInitialize(int serverfd)
+int messengerGetServer(const char *path, int *server)
 {
-	(void) serverfd;
-	exit(1);
+	(void) path;
+	(void) server;
+	return 1;
 }
