@@ -44,20 +44,11 @@ bool serverClose(bool killRunning)
 	//return !serverRunning
 }
 
-__attribute__((noreturn)) void serverMain(struct server server)
+__attribute__((noreturn)) void serverMain(void *srvr)
 {
-	(void) server;
-	int fifo_read = openat(server.server, SFILE_FIFO, O_RDONLY | O_NONBLOCK);
-	if (fifo_read == -1) {
-		dprintf(server.err, "Could not open fifo for reading\n");
-		close(server.err);
-		close(server.log);
-		close(server.fifo);
-		exit(1);
-	}
-
+	struct server server = *((struct server*) srvr);
 	while (1) {
-		dprintf(server.log, "Doing server loop\n");
+		dprintf(server.log, "Server lives!\n");
 		sleep(3);
 	}
 	exit(1);

@@ -30,7 +30,7 @@ struct server {
 	int err;  // fd of a file to use in place of the server's stderr
 };
 
-void serverMain(struct server server) __attribute__((noreturn));
+void serverMain(void *srvr) __attribute__((noreturn));
 bool serverAddJob(struct job job);
 
 enum serverInitCode {
