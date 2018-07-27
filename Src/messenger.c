@@ -39,11 +39,11 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 	struct server server = *((struct server*) srvr);
 	int fifo_read = openat(server.server, SFILE_FIFO, O_RDONLY | O_NONBLOCK);
 	if (fifo_read == -1) {
-		dprintf(server.err, "Could not open fifo for reading\n");
+		fprintf(server.err, "Could not open fifo for reading\n");
 
 		// TODO: create some sort of serverUnmake(struct server)?
-		close(server.err);
-		close(server.log);
+		fclose(server.err);
+		fclose(server.log);
 		close(server.fifo);
 		// TODO: some sort of server_requestHalt?
 		exit(1); // We use exit (rather than pthread_exit) to kill
@@ -52,7 +52,8 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 
 	while (1) {
 		sleep(3);
-		dprintf(server.log, "Reader Lives!\n");
+		fprintf(server.log, "Reader Lives!\n");
+		fflush(server.log);
 	}
 }
 
@@ -84,14 +85,14 @@ int messengerGetServer(const char *path, struct server *server)
 
         status = setsid();
         if (status == -1) {
-                dprintf(server->err, "Failed to setsid: %s\n", strerror(errno));
+                fprintf(server->err, "Failed to setsid: %s\n", strerror(errno));
                 exit(1);
         }
 
 	pthread_t unused;
 	status = pthread_create(&unused, NULL, messengerReader, server);
 	if (status) {
-		dprintf(server->err, "Failed to start reader thread: %s\n",
+		fprintf(server->err, "Failed to start reader thread: %s\n",
 			strerror(status));
 		exit(1);
 	}

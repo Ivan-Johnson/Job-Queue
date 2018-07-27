@@ -11,6 +11,7 @@
  */
 
 #include <stdbool.h>
+#include <stdio.h>
 #include <sys/stat.h>
 
 //a fifo file that exists in serverdir. As long as the server is running, this
@@ -25,9 +26,9 @@ struct job {
 
 struct server {
 	int server; // fd of the main server directory
-	int fifo; // fd of the fifo file used to receive requests (WR_ONLY)
-	int log;  // fd of a file to use in place of the server's stdout
-	int err;  // fd of a file to use in place of the server's stderr
+	int fifo;   // fd of the fifo file used to receive requests (WR_ONLY)
+	FILE *log;  // A file to use in place of the server's stdout
+	FILE *err;  // A file to use in place of the server's stderr
 };
 
 void serverMain(void *srvr) __attribute__((noreturn));
