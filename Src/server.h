@@ -32,7 +32,8 @@ struct server {
 };
 
 void serverMain(void *srvr) __attribute__((noreturn));
-bool serverAddJob(struct job job);
+int serverAddJob(struct job job, bool isPriority);
+int serverShutdown(bool killRunning);
 
 enum serverInitCode {
 	SIC_initialized = 0, // success

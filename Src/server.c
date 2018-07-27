@@ -26,15 +26,21 @@
 #define LOG "log.txt"
 #define ERR "err.txt"
 
-bool serverAddJob(struct job job)
+static struct server *this = NULL;
+
+int serverAddJob(struct job job, bool isPriority)
 {
 	(void) job;
-	exit(1);
+	(void) isPriority;
+	fprintf(this->err, "serverAddJob is not yet implemented\n");
+	fflush(this->err);
+	return 1;
 }
 
-bool serverClose(bool killRunning)
+int serverShutdown(bool killRunning)
 {
 	(void) killRunning;
+	fprintf(this->err, "Exiting abruptly, as graceful shutdowns are not yet implemented\n");
 	exit(1);
 	//TODO:
 	//assert that server is running
@@ -46,9 +52,9 @@ bool serverClose(bool killRunning)
 
 __attribute__((noreturn)) void serverMain(void *srvr)
 {
-	struct server server = *((struct server*) srvr);
+	this = srvr;
 	while (1) {
-		fprintf(server.log, "Server lives!\n");
+		fprintf(this->log, "Server lives!\n");
 		sleep(3);
 	}
 	exit(1);
