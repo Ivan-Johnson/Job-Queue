@@ -7,68 +7,24 @@
  *
  * LICENSE: GPL 2.0
  */
-//for fstatat
+
+//for O_DIRECTORY & dprintf
 #define _POSIX_C_SOURCE 200809L
 
-#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/queue.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
-#include "messenger.h"
 #include "server.h"
 
-enum serverState serverStatus(int serverfd)
-{
-	// TODO are there any remaining race conditions? (even if not harmful)
-	struct stat st;
-	int status;
-	status = fstatat(serverfd, ".", &st, 0);
-	if (status != 0) {
-		return invalid;
-	}
-	if (st.st_uid != geteuid()) { //user doesn't own the server
-		return invalid;
-	}
-	mode_t mode = st.st_mode;
-	//only look at user/group/other's read/write/execute perms
-	mode = mode & (S_IRWXU | S_IRWXG | S_IRWXO);
-	if (mode != S_IRWXU) {
-		return invalid;
-	}
-
-	int fd = openat(serverfd, SFILE_FIFO, O_WRONLY | O_NONBLOCK);
-	if (fd >= 0) {
-		status = fstat(fd, &st);
-		if (status) {
-			return error;
-		}
-		if (!S_ISFIFO(st.st_mode)) {
-			close(fd);
-			return invalid;
-		}
-		status = close(fd);
-		if (status) {
-			return error;
-		}
-		return running;
-	} else {
-		if (errno == ENXIO) {
-			return stopped;
-		} else if (errno == EISDIR || errno == EACCES
-			|| errno == ENOENT) {
-			return invalid;
-		} else {
-			return error;
-		}
-	}
-}
-
+//TODO make these names consistent with SFILE_FIFO? or maybe not, because these
+//are not part of the public interface.
+#define LOG "log.txt"
+#define ERR "err.txt"
 
 bool serverAddJob(struct job job)
 {
@@ -88,9 +44,22 @@ bool serverClose(bool killRunning)
 	//return !serverRunning
 }
 
-void serverMain(int serverfd)
+__attribute__((noreturn)) void serverMain(struct server server)
 {
-	(void) serverfd;
+	(void) server;
+	int fifo_read = openat(server.server, SFILE_FIFO, O_RDONLY | O_NONBLOCK);
+	if (fifo_read == -1) {
+		dprintf(server.err, "Could not open fifo for reading\n");
+		close(server.err);
+		close(server.log);
+		close(server.fifo);
+		exit(1);
+	}
+
+	while (1) {
+		dprintf(server.log, "Doing server loop\n");
+		sleep(3);
+	}
 	exit(1);
 	/*while (shouldRun) {
 		wait(); // reader thread can wake us
@@ -99,4 +68,91 @@ void serverMain(int serverfd)
 			run
 		}
 	}*/
+}
+
+static int openServerDir(const char *path, int *fileDescriptor)
+{
+	int status;
+
+	mkdir(path, SERVER_DIR_PERMS);
+	//ignore mkdir errors, because it's possible to recover from them
+	//if a valid server dir already exists.
+	int fd = open(path, O_RDONLY | O_DIRECTORY);
+	if (fd == -1) {
+		return 1;
+	}
+
+	struct stat st;
+	status = fstat(fd, &st);
+	if (status) {
+		return 1;
+	}
+	if (st.st_uid != geteuid()) {
+		return 1;
+	}
+
+	*fileDescriptor = fd;
+	return 0;
+}
+
+// opens the existing fifo name in the directory specified by fd. Only succeeds
+// if there's something already reading from the fifo. On failure, fdFIFO is set
+// to -1.
+static enum serverInitCode openFIFO(int serverfd, const char *name, int *fdFIFO)
+{
+	int status;
+	mkfifoat(serverfd, name, SERVER_DIR_PERMS);
+	int fd = openat(serverfd, name, O_WRONLY | O_NONBLOCK);
+	*fdFIFO = fd;
+	if (fd >= 0) {
+		struct stat st;
+		status = fstat(fd, &st);
+		if (status) {
+			close(fd);
+			return SIC_failed;
+		}
+		if (!S_ISFIFO(st.st_mode)) {
+			close(fd);
+			return SIC_failed;
+		}
+		return SIC_running;
+	} else {
+		if (errno == ENXIO) {
+			return SIC_initialized;
+		} else {
+			return SIC_failed;
+		}
+	}
+}
+
+enum serverInitCode serverInitialize(const char *path, struct server *s)
+{
+
+	int status;
+
+	status = openServerDir(path, &s->server);
+	if (status) {
+		goto fail_server;
+	}
+
+	s->log = openat(s->server, LOG, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
+	if (s->log == -1) {
+		goto fail_log;
+	}
+
+	s->err = openat(s->server, ERR, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
+	if (s->log == -1) {
+		goto fail_err;
+	}
+
+	//TODO close fd's if we can't open FIFO
+	return openFIFO(s->server, SFILE_FIFO, &s->fifo);
+
+	// close files in the reverse of the order they were aquired in
+fail_err:
+	close(s->log);
+fail_log:
+	close(s->server);
+fail_server:
+	return SIC_failed;
 }

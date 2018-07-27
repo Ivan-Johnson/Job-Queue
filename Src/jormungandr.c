@@ -12,8 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "messenger.h"
 #include "jormungandr.h"
-#include "server.h"
 
 const char *argp_program_version = "\
 Jörmungandr v0.1.0-alpha\n\
@@ -69,31 +69,15 @@ int fulfilArgs(struct arguments args)
 	printf("Server is %s\n", args.server);
 	printf("cmd is %s\n", args.cmd);
 
-	int sfd = open(args.server, O_RDONLY);
-	assert(sfd > 0);
-	enum serverState ss = serverStatus(sfd);
-	char *sss;
-	switch (ss) {
-	case unknown:
-		sss = "unknown";
-		break;
-	case invalid:
-		sss = "invalid";
-		break;
-	case stopped:
-		sss = "stopped";
-		break;
-	case running:
-		sss = "running";
-		break;
-	case error:
-		sss = "error";
-		break;
-	default:
-		sss = NULL;
-		break;
+	int status;
+	struct server server;
+	status = messengerGetServer(args.server, &server);
+
+	if (status) {
+		puts("Error when getting server");
+		return 1;
 	}
-	printf("server state is %s\n", sss);
+	//foo
 	return 0;
 }
 
