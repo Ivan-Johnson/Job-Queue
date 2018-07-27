@@ -11,9 +11,9 @@
 
 #include "messenger.h"
 
-bool messengerSendJob(int serverfd, struct job job)
+bool messengerSendJob(struct server server, struct job job)
 {
-	(void) serverfd;
+	(void) server;
 	(void) job;
 	exit(1);
 	//TODO:
@@ -22,9 +22,23 @@ bool messengerSendJob(int serverfd, struct job job)
 	//write job to fifo
 }
 
-int messengerGetServer(const char *path, int *server)
+#include <stdio.h>
+int messengerGetServer(const char *path, struct server *server)
 {
-	(void) path;
-	(void) server;
-	return 1;
+	int status;
+	status = serverInitialize(path, server);
+	if (status == SIC_running) {
+		puts("Server is already running");
+		return 0;
+	} else if (status == SIC_failed) {
+		puts("SIC_failed");
+		return 1;
+	} else if (status != SIC_initialized) {
+		puts("Invalid SIC code?");
+		return 1;
+	}
+
+	//server is initialized properly; we just need to launch the server
+	puts("Just need to launch server now.");
+	return 255;
 }

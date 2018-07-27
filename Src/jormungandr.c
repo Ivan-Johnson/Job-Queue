@@ -70,8 +70,9 @@ int fulfilArgs(struct arguments args)
 	printf("cmd is %s\n", args.cmd);
 
 	int status;
-	int server;
+	struct server server;
 	status = messengerGetServer(args.server, &server);
+
 	if (status) {
 		puts("Error when getting server");
 		return 1;
