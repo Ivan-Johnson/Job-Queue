@@ -7,6 +7,7 @@
  *
  * LICENSE: GPL 2.0
  */
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -17,14 +18,14 @@ bool messengerSendJob(struct server server, struct job job)
 {
 	(void) server;
 	(void) job;
-	exit(1);
+	puts("messengerSendJob is not yet implemented");
+	return false;
 	//TODO:
 	//return false if server not running
 	//check status of fifo, initialize if dne
 	//write job to fifo
 }
 
-#include <stdio.h>
 int messengerGetServer(const char *path, struct server *server)
 {
 	int status;
