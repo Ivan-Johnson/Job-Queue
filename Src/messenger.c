@@ -101,22 +101,22 @@ int messengerGetServer(const char *path, struct server *server)
 		return 1;
 	}
 
-        int pid = fork();
-        if (pid == -1) {
+	int pid = fork();
+	if (pid == -1) {
 		puts("Failed to fork a server");
 		// TODO: close fd's in server
-                return 1;
-        } else if (pid != 0) {
+		return 1;
+	} else if (pid != 0) {
 		// Origional process immediately returns successfully
 		puts("Successfully forked a server");
-                return 0;
-        }
+		return 0;
+	}
 
-        status = setsid();
-        if (status == -1) {
-                fprintf(server->err, "Failed to setsid: %s\n", strerror(errno));
-                exit(1);
-        }
+	status = setsid();
+	if (status == -1) {
+		fprintf(server->err, "Failed to setsid: %s\n", strerror(errno));
+		exit(1);
+	}
 
 	pthread_t unused;
 	status = pthread_create(&unused, NULL, messengerReader, server);
