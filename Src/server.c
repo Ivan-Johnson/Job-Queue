@@ -32,7 +32,7 @@ int serverAddJob(struct job job, bool isPriority)
 {
 	(void) job;
 	(void) isPriority;
-	fprintf(this->err, "serverAddJob is not yet implemented\n");
+	fprintf(this->err, "Call to unimplemented function serverAddJob\n");
 	fflush(this->err);
 	return 1;
 }
