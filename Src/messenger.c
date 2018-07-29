@@ -73,9 +73,16 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 			serverShutdown(false);
 			pthread_exit(NULL);
 		}
-		fprintf(server.log, "Messenger got this valid string:\n"
-			"\"%s\"\n", buf);
-		fflush(server.log);
+		struct job job;
+		job.cmd = buf;
+		int status = serverAddJob(job, false);
+		if (status) {
+			fprintf(server.err, "Error when scheduling job: %s\n",
+				job.cmd);
+			fflush(server.err);
+		} else {
+			fprintf(server.log, "Scheduled job: %s\n", job.cmd);
+		}
 	}
 }
 
