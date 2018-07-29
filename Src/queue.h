@@ -15,13 +15,13 @@
 #include "server.h"
 
 void queueEnqueue(struct job);
-size_t queueSize();
-struct job queueDequeue();
-struct job queuePeek();
-void queueFree();
+size_t queueSize(void);
+struct job queueDequeue(void);
+struct job queuePeek(void);
+void queueFree(void);
 
 #ifdef TEST
-size_t queueCurCapacity();
+size_t queueCurCapacity(void);
 #endif
 
 #endif

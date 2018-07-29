@@ -25,7 +25,7 @@
 static struct job *jobs = NULL;
 static size_t arr_len = 0, next = 0;
 
-void stackFree()
+void stackFree(void)
 {
 	if (jobs != NULL) {
 		free(jobs);
@@ -35,13 +35,13 @@ void stackFree()
 	next = 0;
 }
 
-size_t stackCurCapacity()
+size_t stackCurCapacity(void)
 {
 	return arr_len;
 }
 
 //Initialize the stack if necessary
-static inline void stackInitialize()
+static inline void stackInitialize(void)
 {
 	if (jobs == NULL) {
 		arr_len = STACK_INIT_ARR_LEN;
@@ -50,7 +50,7 @@ static inline void stackInitialize()
 	}
 }
 
-static inline void stackGrow()
+static inline void stackGrow(void)
 {
 	struct job *jobsNew = malloc(sizeof(struct job) * arr_len * 2);
 
@@ -61,7 +61,7 @@ static inline void stackGrow()
 	jobs = jobsNew;
 }
 
-static inline void stackShrink()
+static inline void stackShrink(void)
 {
 	struct job *jobsNew = malloc(sizeof(struct job) * arr_len / 2);
 
@@ -82,14 +82,14 @@ void stackPush(struct job job)
 	next++;
 }
 
-size_t stackSize()
+size_t stackSize(void)
 {
 	//Even pre-initialization the value of next is accurate
 	//stackInitialize();
 	return next;
 }
 
-struct job stackPop()
+struct job stackPop(void)
 {
 	next--;
 	struct job ret = jobs[next];
@@ -99,7 +99,7 @@ struct job stackPop()
 	return ret;
 }
 
-struct job stackPeek()
+struct job stackPeek(void)
 {
 	return jobs[next - 1];
 }

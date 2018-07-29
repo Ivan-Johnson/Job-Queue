@@ -15,18 +15,18 @@
 #include "server.h"
 
 void stackPush(struct job job);
-size_t stackSize();
+size_t stackSize(void);
 
 //Behavior is undefined if there is nothing on the stack
-struct job stackPop();
+struct job stackPop(void);
 
 //Behavior is undefined if there is nothing on the stack
-struct job stackPeek();
+struct job stackPeek(void);
 
-void stackFree();
+void stackFree(void);
 
 #ifdef TEST
-size_t stackCurCapacity();
+size_t stackCurCapacity(void);
 #endif
 
 #endif

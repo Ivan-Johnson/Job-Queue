@@ -19,7 +19,7 @@
 //a fifo file that exists in serverdir. As long as the server is running, this
 //fifo will be opened for reading.
 #define SFILE_FIFO "fifo"
-#define SERVER_DIR_PERMS S_IRWXU
+#define SERVER_DIR_PERMS 0700
 
 struct server {
 	int server; // fd of the main server directory

@@ -16,21 +16,20 @@
 #include "jormungandr.h"
 #include "messenger.h"
 
-const char *argp_program_version = "\
-Jörmungandr v0.1.0-alpha\n\
-Copyright(C) 2018, Ivan Tobias Johnson\n\
-License GPLv2.0: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html\n\
-This software comes with no warranty, to the extent permitted by applicable law";
+const char *argp_program_version =
+	"Jörmungandr v0.1.0-alpha\n"
+	"Copyright(C) 2018, Ivan Tobias Johnson\n"
+	"License GPLv2.0: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html\n"
+	"This software comes with no warranty, to the extent permitted by applicable law";
 const char *argp_program_bug_address = "<git@IvanJohnson.net>";
-static char doc[] = "Jörmungandr -- a tool running a queue of jobs";
-static char args_doc[] = "server [command]";
+static const char doc[] = "Jörmungandr -- a tool running a queue of jobs";
+static const char args_doc[] = "server [command]";
 
-static error_t parse_opt (int key, char *arg, struct argp_state *state)
+static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
 	struct arguments *arguments = state->input;
 
-	switch (key)
-	{
+	switch (key) {
 	case ARGP_KEY_ARG:
 		if (state->arg_num == 0) {
 			arguments->server = arg;
@@ -61,7 +60,7 @@ struct arguments parseArgs(int argc, char **argv)
 	struct arguments args;
 	args.server = NULL;
 	args.cmd = NULL;
-	argp_parse (&argp, argc, argv, 0, 0, &args);
+	argp_parse(&argp, argc, argv, 0, 0, &args);
 	return args;
 }
 

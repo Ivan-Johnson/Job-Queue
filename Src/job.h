@@ -23,13 +23,13 @@ struct job {
 //Will only fail if the given job cannot fit in the specified buffer. In this
 //case, returns -1.
 ssize_t serializeJob(struct job job, char *buf, size_t bufLen)
-	__attribute__((nonnull (2)));
+	__attribute__((nonnull(2)));
 
 //Always succeeds (when given valid arguments)
 //
 //No memory will be malloc'ed during this call. However, job may contain
 //pointers to data in the buffer.
 void unserializeJob(struct job *job, char *buf, size_t serialLen)
-	__attribute__((nonnull (1, 2)));
+	__attribute__((nonnull(1, 2)));
 
 #endif

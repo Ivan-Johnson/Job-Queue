@@ -41,10 +41,11 @@ int messengerSendJob(struct server server, struct job job)
 
 __attribute__((noreturn)) static void* messengerReader(void *srvr)
 {
-	struct server server = *((struct server*) srvr);
+	struct server server = *((struct server *) srvr);
 	fprintf(server.log, "Messenger is initializing\n");
 	fflush(server.log);
-	int fifo_read = openat(server.server, SFILE_FIFO, O_RDONLY | O_NONBLOCK);
+	int fifo_read = openat(server.server, SFILE_FIFO,
+			O_RDONLY | O_NONBLOCK);
 	if (fifo_read == -1) {
 		fprintf(server.err, "Could not open fifo for reading\n");
 
@@ -53,7 +54,8 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 		serverShutdown(false);
 		pthread_exit(NULL);
 	}
-	fprintf(server.log, "Messenger successfully opened the fifo for reading\n");
+	fprintf(server.log,
+		"Messenger successfully opened the fifo for reading\n");
 	fflush(server.log);
 
 	while (1) {

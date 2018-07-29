@@ -10,8 +10,7 @@
  * LICENSE: GPL 2.0
  */
 
-struct arguments
-{
+struct arguments {
 	char *server;
 	char *cmd;
 };

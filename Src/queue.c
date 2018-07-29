@@ -34,12 +34,12 @@
 static struct job *jobs = NULL;
 static size_t arr_len = 0, old = 0, new = 0;
 
-size_t queueCurCapacity()
+size_t queueCurCapacity(void)
 {
 	return arr_len - 2;
 }
 
-void queueFree()
+void queueFree(void)
 {
 	if (jobs != NULL) {
 		free(jobs);
@@ -50,7 +50,7 @@ void queueFree()
 	new = 1;
 }
 
-static inline void queueInitialize()
+static inline void queueInitialize(void)
 {
 	if (jobs == NULL) {
 		arr_len = QUEUE_MIN_SIZE;
@@ -80,7 +80,7 @@ static size_t index(size_t pseudoindex)
 	}
 }
 
-static void queueGrow()
+static void queueGrow(void)
 {
 	struct job *arrOld = jobs;
 	jobs = malloc(sizeof(struct job) * arr_len * 2);
@@ -107,7 +107,7 @@ void queueEnqueue(struct job job)
 	new = index(new + 1);
 }
 
-size_t queueSize()
+size_t queueSize(void)
 {
 	//subtract two because index zero and index new are empty
 	if (old <= new) { // The queue is not wrapped
@@ -122,10 +122,9 @@ size_t queueSize()
 
 		return num_cells - num_empty;
 	}
-	exit(1);
 }
 
-static inline void queueShrink()
+static inline void queueShrink(void)
 {
 	size_t newSize = arr_len / 2;
 	if (newSize < QUEUE_MIN_SIZE) {
@@ -149,7 +148,7 @@ static inline void queueShrink()
 	free(arrOld);
 }
 
-struct job queueDequeue()
+struct job queueDequeue(void)
 {
 	struct job job = jobs[old];
 	old = index(old + 1);
@@ -159,7 +158,7 @@ struct job queueDequeue()
 	return job;
 }
 
-struct job queuePeek()
+struct job queuePeek(void)
 {
 	return jobs[index(old)];
 }

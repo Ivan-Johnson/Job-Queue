@@ -33,7 +33,7 @@ int serverAddJob(struct job job, bool isPriority)
 {
 	(void) job;
 	(void) isPriority;
-	fprintf(this->err, "Call to unimplemented function serverAddJob\n");
+	fprintf(this->err, "Call to unimplemented function %s\n", __func__);
 	fflush(this->err);
 	return 1;
 }
@@ -123,7 +123,7 @@ static enum serverInitCode openFIFO(int serverfd, const char *name, int *fdFIFO)
 	}
 }
 
-static struct server serverInitialize()
+static struct server serverInitialize(void)
 {
 	struct server s;
 	s.log = NULL;
