@@ -10,6 +10,8 @@
  * LICENSE: GPL 2.0
  */
 #include <stdlib.h>
+
+#include "job.h"
 #include "server.h"
 
 void queueEnqueue(struct job);

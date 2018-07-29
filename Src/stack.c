@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "job.h"
 #include "stack.h"
 
 #define STACK_INIT_ARR_LEN 128

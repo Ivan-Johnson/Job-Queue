@@ -21,6 +21,7 @@
 #include <sys/select.h>
 #include <unistd.h>
 
+#include "job.h"
 #include "messenger.h"
 #include "server.h"
 

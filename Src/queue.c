@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "job.h"
 #include "server.h"
 
 //we store the array in a circular array.
