@@ -45,13 +45,8 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 	int fifo_read = openat(server.server, SFILE_FIFO, O_RDONLY | O_NONBLOCK);
 	if (fifo_read == -1) {
 		fprintf(server.err, "Could not open fifo for reading\n");
-		fflush(server.err);
-		fflush(server.log);
 
-		// TODO: create some sort of serverUnmake(struct server)?
-		fclose(server.err);
-		fclose(server.log);
-		close(server.fifo);
+		serverClose(server);
 
 		serverShutdown(false);
 		pthread_exit(NULL);

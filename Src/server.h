@@ -48,4 +48,6 @@ enum serverInitCode {
  */
 enum serverInitCode serverInitialize(const char *path, struct server *s);
 
+void serverClose(struct server s);
+
 #endif

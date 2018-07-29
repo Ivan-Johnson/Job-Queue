@@ -122,55 +122,67 @@ static enum serverInitCode openFIFO(int serverfd, const char *name, int *fdFIFO)
 	}
 }
 
+static struct server serverMake()
+{
+	struct server s;
+	s.log = NULL;
+	s.err = NULL;
+	s.server = -1;
+	s.fifo = -1;
+	return s;
+}
+
+void serverClose(struct server s)
+{
+	if (s.log) {
+		fclose(s.log);
+	}
+	if (s.err) {
+		fclose(s.err);
+	}
+	if (s.fifo != -1) {
+		close(s.fifo);
+	}
+	if (s.server != -1) {
+		close(s.server);
+	}
+}
+
 enum serverInitCode serverInitialize(const char *path, struct server *s)
 {
-	s->log = NULL;
-	s->err = NULL;
-	s->server = -1;
-	s->fifo = -1;
+	*s = serverMake();
 
 	int status;
 
 	status = openServerDir(path, &s->server);
 	if (status) {
-		goto fail;
+		serverClose(*s);
+		return SIC_failed;
 	}
 
 	int fd;
 	fd = openat(s->server, LOG, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
 	if (fd == -1) {
-		goto fail;
+		serverClose(*s);
+		return SIC_failed;
 	}
 	s->log = fdopen(fd, "a");
 	if (!s->log) {
-		goto fail;
+		serverClose(*s);
+		return SIC_failed;
 	}
 
 	fd = openat(s->server, ERR, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
 	if (fd == -1) {
-		goto fail;
+		serverClose(*s);
+		return SIC_failed;
 	}
 	s->err = fdopen(fd, "a");
 	if (!s->err) {
-		goto fail;
+		serverClose(*s);
+		return SIC_failed;
 	}
 
 	//TODO close fd's if we can't open FIFO
 	return openFIFO(s->server, SFILE_FIFO, &s->fifo);
-
-
-fail:
-	if (s->log) {
-		fclose(s->log);
-	}
-	if (s->err) {
-		fclose(s->err);
-	}
-	if (s->fifo != -1) {
-		close(s->fifo);
-	}
-	if (s->server != -1) {
-		close(s->server);
-	}
-	return SIC_failed;
 }
