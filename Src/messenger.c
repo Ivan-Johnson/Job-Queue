@@ -52,9 +52,9 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 		fclose(server.err);
 		fclose(server.log);
 		close(server.fifo);
-		// TODO: some sort of server_requestHalt?
-		exit(1); // We use exit (rather than pthread_exit) to kill
-			 // serverMain as well
+
+		serverShutdown(false);
+		pthread_exit(NULL);
 	}
 	fprintf(server.log, "Messenger successfully opened the fifo for reading\n");
 	fflush(server.log);
