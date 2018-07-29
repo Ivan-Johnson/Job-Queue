@@ -13,7 +13,7 @@
 
 #include "server.h"
 
-bool messengerSendJob(struct server server, struct job job);
+int messengerSendJob(struct server server, struct job job);
 int messengerGetServer(const char *path, struct server *server);
 
 #endif

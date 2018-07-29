@@ -35,8 +35,8 @@ GENERATE_RUNNER = generate_test_runner.rb
 #CC = x86_64-w64-mingw32-gcc
 
 CFLAGS += -I$(SRC_DIR)
-CFLAGS += -Wfatal-errors -std=c99 -Werror -Wconversion -Wall -Wextra -pedantic -pedantic-errors
-
+CFLAGS += -Wfatal-errors -pthread -std=c99 -Werror -Wconversion -Wall -Wextra -pedantic -pedantic-errors
+LDLIBS += -lpthread
 
 
 BUILD_TYPE ?= debug

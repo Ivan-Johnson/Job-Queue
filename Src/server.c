@@ -26,15 +26,21 @@
 #define LOG "log.txt"
 #define ERR "err.txt"
 
-bool serverAddJob(struct job job)
+static struct server *this = NULL;
+
+int serverAddJob(struct job job, bool isPriority)
 {
 	(void) job;
-	exit(1);
+	(void) isPriority;
+	fprintf(this->err, "serverAddJob is not yet implemented\n");
+	fflush(this->err);
+	return 1;
 }
 
-bool serverClose(bool killRunning)
+int serverShutdown(bool killRunning)
 {
 	(void) killRunning;
+	fprintf(this->err, "Exiting abruptly, as graceful shutdowns are not yet implemented\n");
 	exit(1);
 	//TODO:
 	//assert that server is running
@@ -44,20 +50,11 @@ bool serverClose(bool killRunning)
 	//return !serverRunning
 }
 
-__attribute__((noreturn)) void serverMain(struct server server)
+__attribute__((noreturn)) void serverMain(void *srvr)
 {
-	(void) server;
-	int fifo_read = openat(server.server, SFILE_FIFO, O_RDONLY | O_NONBLOCK);
-	if (fifo_read == -1) {
-		dprintf(server.err, "Could not open fifo for reading\n");
-		close(server.err);
-		close(server.log);
-		close(server.fifo);
-		exit(1);
-	}
-
+	this = srvr;
 	while (1) {
-		dprintf(server.log, "Doing server loop\n");
+		fprintf(this->log, "Server lives!\n");
 		sleep(3);
 	}
 	exit(1);
@@ -127,32 +124,53 @@ static enum serverInitCode openFIFO(int serverfd, const char *name, int *fdFIFO)
 
 enum serverInitCode serverInitialize(const char *path, struct server *s)
 {
+	s->log = NULL;
+	s->err = NULL;
+	s->server = -1;
+	s->fifo = -1;
 
 	int status;
 
 	status = openServerDir(path, &s->server);
 	if (status) {
-		goto fail_server;
+		goto fail;
 	}
 
-	s->log = openat(s->server, LOG, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
-	if (s->log == -1) {
-		goto fail_log;
+	int fd;
+	fd = openat(s->server, LOG, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
+	if (fd == -1) {
+		goto fail;
+	}
+	s->log = fdopen(fd, "a");
+	if (!s->log) {
+		goto fail;
 	}
 
-	s->err = openat(s->server, ERR, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
-	if (s->log == -1) {
-		goto fail_err;
+	fd = openat(s->server, ERR, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
+	if (fd == -1) {
+		goto fail;
+	}
+	s->err = fdopen(fd, "a");
+	if (!s->err) {
+		goto fail;
 	}
 
 	//TODO close fd's if we can't open FIFO
 	return openFIFO(s->server, SFILE_FIFO, &s->fifo);
 
-	// close files in the reverse of the order they were aquired in
-fail_err:
-	close(s->log);
-fail_log:
-	close(s->server);
-fail_server:
+
+fail:
+	if (s->log) {
+		fclose(s->log);
+	}
+	if (s->err) {
+		fclose(s->err);
+	}
+	if (s->fifo != -1) {
+		close(s->fifo);
+	}
+	if (s->server != -1) {
+		close(s->server);
+	}
 	return SIC_failed;
 }

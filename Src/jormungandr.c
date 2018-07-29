@@ -72,13 +72,17 @@ int fulfilArgs(struct arguments args)
 	int status;
 	struct server server;
 	status = messengerGetServer(args.server, &server);
-
 	if (status) {
 		puts("Error when getting server");
 		return 1;
 	}
-	//foo
-	return 0;
+
+	if (args.cmd == NULL) {
+		return 0;
+	}
+	struct job job;
+	job.cmd = args.cmd;
+	return messengerSendJob(server, job);
 }
 
 #ifndef TEST
