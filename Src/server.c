@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "job.h"
 #include "server.h"
 
 //TODO make these names consistent with SFILE_FIFO? or maybe not, because these

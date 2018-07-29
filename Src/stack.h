@@ -10,6 +10,8 @@
  * LICENSE: GPL 2.0
  */
 #include <stdlib.h>
+
+#include "job.h"
 #include "server.h"
 
 void stackPush(struct job job);

@@ -14,15 +14,12 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
+#include "job.h"
+
 //a fifo file that exists in serverdir. As long as the server is running, this
 //fifo will be opened for reading.
 #define SFILE_FIFO "fifo"
 #define SERVER_DIR_PERMS S_IRWXU
-
-struct job {
-	// index 0 is the command we run. Indicies [1, argc] are arguments
-	char *cmd;
-};
 
 struct server {
 	int server; // fd of the main server directory

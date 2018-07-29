@@ -11,6 +11,7 @@
  */
 #include <stdbool.h>
 
+#include "job.h"
 #include "server.h"
 
 int messengerSendJob(struct server server, struct job job);

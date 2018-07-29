@@ -12,8 +12,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "messenger.h"
+#include "job.h"
 #include "jormungandr.h"
+#include "messenger.h"
 
 const char *argp_program_version = "\
 Jörmungandr v0.1.0-alpha\n\

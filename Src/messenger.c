@@ -11,6 +11,7 @@
 //for dprintf
 #define _POSIX_C_SOURCE 200809L
 
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -21,20 +22,21 @@
 #include <sys/select.h>
 #include <unistd.h>
 
+#include "job.h"
 #include "messenger.h"
 #include "server.h"
 
 int messengerSendJob(struct server server, struct job job)
 {
-	// Our temporary transmission format is to just send the command text
-	// and use the string's null terminator as a delimiter between commands
-	size_t len = strlen(job.cmd) + 1;
-	if (len > PIPE_BUF) {
-		puts("String is too long");
+	char buf[PIPE_BUF];
+	ssize_t len = serializeJob(job, buf, PIPE_BUF);
+	if (len == -1) {
+		puts("The given job does not fit in our buffer");
 		return 1;
 	}
-	ssize_t s = write(server.fifo, job.cmd, len);
-	return (size_t) s != len;
+	assert(len >= 0);
+	ssize_t s = (ssize_t) write(server.fifo, buf, (size_t) len);
+	return s != len;
 }
 
 __attribute__((noreturn)) static void* messengerReader(void *srvr)
@@ -69,7 +71,7 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 			pthread_exit(NULL);
 		}
 		struct job job;
-		job.cmd = buf;
+		unserializeJob(&job, buf, (size_t) s);
 		int status = serverAddJob(job, false);
 		if (status) {
 			fprintf(server.err, "Error when scheduling job: %s\n",
