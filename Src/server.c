@@ -122,7 +122,7 @@ static enum serverInitCode openFIFO(int serverfd, const char *name, int *fdFIFO)
 	}
 }
 
-static struct server serverMake()
+static struct server serverInitialize()
 {
 	struct server s;
 	s.log = NULL;
@@ -148,9 +148,9 @@ void serverClose(struct server s)
 	}
 }
 
-enum serverInitCode serverInitialize(const char *path, struct server *s)
+enum serverInitCode serverOpen(const char *path, struct server *s)
 {
-	*s = serverMake();
+	*s = serverInitialize();
 
 	int status;
 

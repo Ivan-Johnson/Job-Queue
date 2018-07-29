@@ -46,7 +46,7 @@ enum serverInitCode {
  * s can be used to launch a server if and only if SS_initialized is
  * returned.
  */
-enum serverInitCode serverInitialize(const char *path, struct server *s);
+enum serverInitCode serverOpen(const char *path, struct server *s);
 
 void serverClose(struct server s);
 

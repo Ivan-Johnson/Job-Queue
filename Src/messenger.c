@@ -84,7 +84,7 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 int messengerGetServer(const char *path, struct server *server)
 {
 	int status;
-	status = serverInitialize(path, server);
+	status = serverOpen(path, server);
 	if (status == SIC_running) {
 		puts("Server is already running");
 		return 0;
