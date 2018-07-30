@@ -151,7 +151,7 @@ int fulfilArgs(struct arguments args)
 		return 0;
 	}
 	struct job job;
-	job.cmd = args.cmd[0];
+	job.argv = args.cmd;
 	return messengerSendJob(server, job);
 }
 

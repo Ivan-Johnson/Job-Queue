@@ -11,18 +11,37 @@
 
 #include <unity.h>
 
+char *args0[] = {"args0_0"};
+struct job job0 = {false, sizeof(args0) / sizeof(char*), args0};
+char *args1[] = {"args1_0", "args1_1", "args1_2"};
+struct job job1 = {false, sizeof(args1) / sizeof(char*), args1};
+char *args2[] = {"args2_0"};
+struct job job2 = {false, sizeof(args2) / sizeof(char*), args2};
+char *args3[] = {"args3_0", "args3_1"};
+struct job job3 = {false, sizeof(args3) / sizeof(char*), args3};
+char *args4[] = {"args4_0", "args4_1", "args4_2", "args4_3", "args4_4"};
+struct job job4 = {false, sizeof(args4) / sizeof(char*), args4};
+char *args5[] = {"args5_0", "args5_1", "args5_2"};
+struct job job5 = {false, sizeof(args5) / sizeof(char*), args5};
+
+#define ARR_LEN 5
+struct job jobs[ARR_LEN];
+
 void setUp()
 {
-	struct job job;
-	job.cmd = NULL;
-
 	TEST_ASSERT_EQUAL_INT(0, queueSize());
 	//advances the queue indicies to near the end of the length 128 array
 	for (int x = 0; x < 125; x++) {
-		queueEnqueue(job);
+		queueEnqueue(job0);
 		queueDequeue();
 	}
 	TEST_ASSERT_EQUAL_INT(0, queueSize());
+
+	jobs[0] = job1;
+	jobs[1] = job2;
+	jobs[2] = job3;
+	jobs[3] = job4;
+	jobs[4] = job5;
 }
 
 void tearDown()
@@ -37,19 +56,16 @@ void tearDown()
  */
 void testSize0()
 {
-	struct job job;
-	job.cmd = NULL;
-
 	TEST_ASSERT_EQUAL_INT(0, queueSize());
-	queueEnqueue(job);
+	queueEnqueue(job0);
 	TEST_ASSERT_EQUAL_INT(1, queueSize());
-	queueEnqueue(job);
+	queueEnqueue(job0);
 	TEST_ASSERT_EQUAL_INT(2, queueSize());
 	queueDequeue();
 	TEST_ASSERT_EQUAL_INT(1, queueSize());
-	queueEnqueue(job);
+	queueEnqueue(job0);
 	TEST_ASSERT_EQUAL_INT(2, queueSize());
-	queueEnqueue(job);
+	queueEnqueue(job0);
 	TEST_ASSERT_EQUAL_INT(3, queueSize());
 	queueDequeue();
 	TEST_ASSERT_EQUAL_INT(2, queueSize());
@@ -57,9 +73,9 @@ void testSize0()
 	TEST_ASSERT_EQUAL_INT(1, queueSize());
 	queueDequeue();
 	TEST_ASSERT_EQUAL_INT(0, queueSize());
-	queueEnqueue(job);
+	queueEnqueue(job0);
 	TEST_ASSERT_EQUAL_INT(1, queueSize());
-	queueEnqueue(job);
+	queueEnqueue(job0);
 	TEST_ASSERT_EQUAL_INT(2, queueSize());
 	queueDequeue();
 	TEST_ASSERT_EQUAL_INT(1, queueSize());
@@ -72,22 +88,13 @@ void testSize0()
  */
 void testPeek0()
 {
-	struct job job0, job1, job2, job3, job4;
-	job0.cmd = "0";
-	job1.cmd = "1";
-	job2.cmd = "2";
-	job3.cmd = "3";
-	job4.cmd = "4";
-	struct job jobs[] = {job0, job1, job2, job3, job4};
-	size_t jobc = 5;
-
-	for (size_t x = 0; x < jobc; x++) {
+	for (size_t x = 0; x < ARR_LEN; x++) {
 		queueEnqueue(jobs[x]);
-		TEST_ASSERT_TRUE(queuePeek().cmd == jobs[0].cmd);
+		TEST_ASSERT_TRUE(jobEq(queuePeek(), jobs[0]));
 	}
-	TEST_ASSERT_EQUAL_INT(jobc, queueSize());
-	for (size_t x = 0; x < jobc; x++) {
-		TEST_ASSERT_TRUE(queuePeek().cmd == jobs[x].cmd);
+	TEST_ASSERT_EQUAL_INT(ARR_LEN, queueSize());
+	for (size_t x = 0; x < ARR_LEN; x++) {
+		TEST_ASSERT_TRUE(jobEq(queuePeek(), jobs[x]));
 		queueDequeue();
 	}
 	TEST_ASSERT_EQUAL_INT(0, queueSize());
@@ -98,21 +105,12 @@ void testPeek0()
  */
 void testDequeue()
 {
-	struct job job0, job1, job2, job3, job4;
-	job0.cmd = "0";
-	job1.cmd = "1";
-	job2.cmd = "2";
-	job3.cmd = "3";
-	job4.cmd = "4";
-	struct job jobs[] = {job0, job1, job2, job3, job4};
-	size_t jobc = 5;
-
-	for (size_t x = 0; x < jobc; x++) {
+	for (size_t x = 0; x < ARR_LEN; x++) {
 		queueEnqueue(jobs[x]);
 	}
-	TEST_ASSERT_EQUAL_INT(jobc, queueSize());
-	for (size_t x = 0; x < jobc; x++) {
-		TEST_ASSERT_TRUE(queueDequeue().cmd == jobs[x].cmd);
+	TEST_ASSERT_EQUAL_INT(ARR_LEN, queueSize());
+	for (size_t x = 0; x < ARR_LEN; x++) {
+		TEST_ASSERT_TRUE(jobEq(queueDequeue(), jobs[x]));
 	}
 	TEST_ASSERT_EQUAL_INT(0, queueSize());
 }
@@ -129,9 +127,9 @@ void testGrow()
 	TEST_ASSERT_TRUE(JOBC > cap + 5);
 	struct job jobs[JOBC];
 	for(int x = 0; x < JOBC; x++) {
-		jobs[x].cmd = malloc(sizeof(char));
-		TEST_ASSERT_TRUE_MESSAGE(jobs[x].cmd,
-					"We ran out of memory while testing?");
+		jobs[x].argv = NULL;
+		jobs[x].priority = false;
+		jobs[x].argc = x;
 	}
 
 	for (size_t x = 0; x < cap - 2; x++) {
@@ -154,18 +152,14 @@ void testGrow()
 	queueEnqueue(jobs[cap+3]);
 	//confirm that the queue waits before shrinking
 	for(size_t x = 0; x < 10; x++) {
-		TEST_ASSERT_TRUE(jobs[x].cmd == queueDequeue().cmd);
+		TEST_ASSERT_TRUE(jobEq(jobs[x], queueDequeue()));
 		TEST_ASSERT_TRUE(cap < queueCurCapacity());
 	}
 	//dequeue until we get to
 	for(size_t x = 10; x <= cap + 3; x++) {
-		TEST_ASSERT_TRUE(jobs[x].cmd == queueDequeue().cmd);
+		TEST_ASSERT_TRUE(jobEq(jobs[x], queueDequeue()));
 	}
 	TEST_ASSERT_EQUAL_INT(0, queueSize());
-
-	for(size_t x = 0; x < JOBC; x++) {
-		free(jobs[x].cmd);
-	}
 #undef JOBC
 }
 
@@ -181,9 +175,9 @@ void testShrinkage()
 	TEST_ASSERT_TRUE(JOBC > cap + 5);
 	struct job jobs[JOBC];
 	for(int x = 0; x < JOBC; x++) {
-		jobs[x].cmd = malloc(sizeof(char));
-		TEST_ASSERT_TRUE_MESSAGE(jobs[x].cmd,
-					"We ran out of memory while testing?");
+		jobs[x].argv = NULL;
+		jobs[x].priority = false;
+		jobs[x].argc = x;
 	}
 
 	for (size_t x = 0; x <= cap; x++) {
@@ -193,16 +187,12 @@ void testShrinkage()
 	TEST_ASSERT_EQUAL_INT(cap+1, queueSize());
 
 	for (size_t x = 0; x <= cap; x++) {
-		TEST_ASSERT_TRUE(jobs[x].cmd == queueDequeue().cmd);
+		TEST_ASSERT_TRUE(jobEq(jobs[x], queueDequeue()));
 	}
 	TEST_ASSERT_EQUAL_INT(0, queueSize());
 	// NOTE: the queue's default size is it's minimum size;
 	// so even though it's not storying anything right now,
 	// it should not have shrunk below it's origional size.
 	TEST_ASSERT_TRUE(cap == queueCurCapacity());
-
-	for(size_t x = 0; x < JOBC; x++) {
-		free(jobs[x].cmd);
-	}
 #undef JOBC
 }

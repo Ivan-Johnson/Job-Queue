@@ -77,10 +77,10 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 		int status = serverAddJob(job, false);
 		if (status) {
 			fprintf(server.err, "Error when scheduling job: %s\n",
-				job.cmd);
+				job.argv[0]);
 			fflush(server.err);
 		} else {
-			fprintf(server.log, "Scheduled job: %s\n", job.cmd);
+			fprintf(server.log, "Scheduled job: %s\n", job.argv[0]);
 		}
 	}
 }
