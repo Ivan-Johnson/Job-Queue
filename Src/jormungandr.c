@@ -23,7 +23,9 @@ const char *argp_program_version =
 	"This software comes with no warranty, to the extent permitted by applicable law";
 const char *argp_program_bug_address = "<git@IvanJohnson.net>";
 static const char doc[] = "Jörmungandr -- a tool running a queue of jobs";
-static const char args_doc[] = "server [command]";
+static const char args_doc[] =
+	"launch <serverdir> [--numslots <n>]\n"
+	"schedule <serverdir> [--priority] -- <cmd> [args…]";
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
