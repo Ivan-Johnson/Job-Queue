@@ -11,6 +11,7 @@
 //for O_DIRECTORY & dprintf
 #define _POSIX_C_SOURCE 200809L
 
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -41,7 +42,9 @@ int serverAddJob(struct job job, bool isPriority)
 int serverShutdown(bool killRunning)
 {
 	(void) killRunning;
+	assert(this != NULL);
 	fprintf(this->err, "Exiting abruptly, as graceful shutdowns are not yet implemented\n");
+	serverClose(*this);
 	exit(1);
 	//TODO:
 	//assert that server is running
@@ -58,7 +61,6 @@ __attribute__((noreturn)) void serverMain(void *srvr)
 		fprintf(this->log, "Server lives!\n");
 		sleep(3);
 	}
-	exit(1);
 	/*while (shouldRun) {
 		wait(); // reader thread can wake us
 		if (queue.peek() fits) {
