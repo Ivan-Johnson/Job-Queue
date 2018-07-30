@@ -87,11 +87,18 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 		arguments->cmdCount = state->argc - state->next;
 		break;
 	case ARGP_KEY_END:
-		if (state->arg_num < 2) {
-			argp_usage(state);
-		}
-		if (arguments->task == task_schedule &&
-			arguments->cmd == NULL) {
+		switch (arguments->task) {
+		case task_schedule:
+			if (state->arg_num <= 2) {
+				argp_usage(state);
+			}
+			break;
+		case task_launch:
+			if (state->arg_num != 2) {
+				argp_usage(state);
+			}
+			break;
+		default:
 			argp_usage(state);
 		}
 		break;
