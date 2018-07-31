@@ -81,7 +81,7 @@ void testIdentity()
 		TEST_ASSERT_TRUE(tmp >= 0);
 		tmp = unserializeJob(&jOut, buf, (size_t) tmp);
 		TEST_ASSERT_TRUE(tmp == 0);
-		TEST_ASSERT_TRUE(jobEq(jIn, jOut) == 0);
+		TEST_ASSERT_TRUE(jobEq(jIn, jOut));
 
 		freeUnserializedJob(jOut);
 	}

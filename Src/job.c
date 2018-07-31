@@ -36,6 +36,7 @@ ssize_t serializeJob(struct job job, char *buf, size_t bufLen)
 	}
 	space -= len;
 	memcpy(buf, &job.priority, len);
+	buf += len;
 
 	len = sizeof(int);
 	if (len > space) {
@@ -43,6 +44,7 @@ ssize_t serializeJob(struct job job, char *buf, size_t bufLen)
 	}
 	space -= len;
 	memcpy(buf, &job.argc, len);
+	buf += len;
 
 	for (int x = 0; x < job.argc; x++) {
 		len = strlen(job.argv[x]) + 1;
@@ -51,6 +53,7 @@ ssize_t serializeJob(struct job job, char *buf, size_t bufLen)
 		}
 		space -= len;
 		memcpy(buf, job.argv[x], len);
+		buf += len;
 	}
 
 	size_t used = bufLen - space;
@@ -67,9 +70,9 @@ int unserializeJob(struct job *restrict job, char *restrict buf,
 	len = sizeof(bool) + sizeof(int);
 	assert(len <= remLen);
 	remLen -= len;
-	memcpy(buf, &job->priority, sizeof(bool));
+	memcpy(&job->priority, buf, sizeof(bool));
 	buf += sizeof(bool);
-	memcpy(buf, &job->argc, sizeof(int));
+	memcpy(&job->argc, buf, sizeof(int));
 	buf += sizeof(int);
 
 	job->argv = malloc(sizeof(char*) * ((unsigned long) job->argc));
