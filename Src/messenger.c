@@ -28,7 +28,8 @@
 
 int messengerSendJob(int serverdir, struct job job)
 {
-	int fifo = openat(serverdir, SFILE_FIFO, O_WRONLY | O_NONBLOCK);
+	int fifo = openat(serverdir, SFILE_FIFO,
+			O_WRONLY | O_NONBLOCK | O_CLOEXEC);
 	if (fifo < 0) {
 		if (errno == ENXIO || errno == ENOENT) {
 			puts("The server is not running");
@@ -63,7 +64,7 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 	fprintf(server.log, "Messenger is initializing\n");
 	fflush(server.log);
 	int fifo_read = openat(server.server, SFILE_FIFO,
-			O_RDONLY | O_NONBLOCK);
+			O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	if (fifo_read == -1) {
 		fprintf(server.err, "Could not open fifo for reading\n");
 

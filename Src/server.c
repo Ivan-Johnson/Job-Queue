@@ -117,7 +117,7 @@ int getServerDir(const char *path)
 	mkdir(path, SERVER_DIR_PERMS);
 	//ignore mkdir errors, because it's possible to securely recover from
 	//them if a valid server dir already exists.
-	int fd = open(path, O_RDONLY | O_DIRECTORY);
+	int fd = open(path, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
 	if (fd < 0) {
 		return -1;
 	}
@@ -169,7 +169,8 @@ int openServer(int dirFD, struct server *s)
 	s->server = dirFD;
 
 	int fd;
-	fd = openat(s->server, LOG, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
+	fd = openat(s->server, LOG, O_WRONLY | O_CREAT | O_CLOEXEC,
+		SERVER_DIR_PERMS);
 	if (fd < 0) {
 		serverClose(*s);
 		return 1;
@@ -179,7 +180,8 @@ int openServer(int dirFD, struct server *s)
 		serverClose(*s);
 		return 1;
 	}
-	fd = openat(s->server, ERR, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
+	fd = openat(s->server, ERR, O_WRONLY | O_CREAT | O_CLOEXEC,
+		SERVER_DIR_PERMS);
 	if (fd < 0) {
 		serverClose(*s);
 		return 1;
@@ -190,8 +192,12 @@ int openServer(int dirFD, struct server *s)
 		return 1;
 	}
 
+	//TODO when *launching* the server, we reader creates its own fd. When
+	//scheduling a command, we don't even call this function. So we don't
+	//actually need a fifo fd in server, do we?
 	mkfifoat(s->server, SFILE_FIFO, SERVER_DIR_PERMS);
-	s->fifo = openat(s->server, SFILE_FIFO, O_RDONLY | O_NONBLOCK);
+	s->fifo = openat(s->server, SFILE_FIFO,
+			O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	if (s->fifo < 0) {
 		serverClose(*s);
 		return 1;
