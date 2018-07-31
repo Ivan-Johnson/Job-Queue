@@ -39,10 +39,19 @@ CFLAGS += -Wfatal-errors -pthread -std=c99 -Werror -Wconversion -Wall -Wextra -p
 LDLIBS += -lpthread
 
 
+IS_TEST ?= $(if $(shell [ "$(MAKECMDGOALS)" = "test" ] && echo asdf),yes,no)
 BUILD_TYPE ?= debug
+
 ifeq ($(BUILD_TYPE), debug)
-	CFLAGS += -D DEBUG -O0 -g3 -ggdb -fno-inline -fsanitize=address -fsanitize=leak -fsanitize=undefined
-	LDLIBS := -lasan $(LDLIBS) -lubsan
+	CFLAGS += -D DEBUG -O0 -g3 -ggdb -fno-inline -fsanitize=undefined
+	LDLIBS += -lubsan
+ifeq ($(IS_TEST), no)
+#we don't want leak checking while testing because failed tests may not have a
+#chance to free all memory. Unfortunately, casual trials suggest that we can't
+#have address checking without implicitly activating leak detection.
+	CFLAGS += -fsanitize=leak -fsanitize=address
+	LDLIBS := -lasan $(LDLIBS)
+endif
 endif
 ifeq ($(BUILD_TYPE), develop)
 	CFLAGS += -D DEVELOP -O0 -g3 -ggdb -fno-inline
@@ -51,7 +60,6 @@ ifeq ($(BUILD_TYPE), release)
 	CFLAGS += -D RELEASE -O3
 endif
 
-IS_TEST ?= $(if $(shell [ "$(MAKECMDGOALS)" = "test" ] && echo asdf),yes,no)
 ifeq ($(IS_TEST), yes)
 	BIN_DIR = $(BIN_DIR_BASE)/$(BUILD_TYPE)/Test
 	CFLAGS += -D TEST
