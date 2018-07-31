@@ -9,7 +9,7 @@ commands the server can run at once.
 
 Once a server is launched, use "jormungandr schedule /tmp/Foo -- cmd arg1 arg2"
 to have the "/tmp/Foo" server schedule the command "cmd" for execution, with the
-given arguments. Scheduled commands are stored in a queue, so that the commands
-that are scheduled on a first-come-first-served basis; however, if the priority
+given arguments. Scheduled commands are stored in a queue, so the scheduled
+commands are executed on a first-come-first-served basis; however, if the priority
 flag ("--priority" or "-p") is present when scheduling a command, that command
 will be placed at the front of the queue instead of the back.
