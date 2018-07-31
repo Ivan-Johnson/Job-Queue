@@ -43,6 +43,7 @@ int serverAddJob(struct job job)
 		queueEnqueue(job);
 	}
 	pthread_mutex_unlock(&lock);
+	//TODO wake server thread
 	return 0;
 }
 
@@ -61,6 +62,21 @@ int serverShutdown(bool killRunning)
 	//return !serverRunning
 }
 
+static int getJob(struct job *job)
+{
+	int fail = 0;
+	pthread_mutex_lock(&lock);
+	if (stackSize() > 0) {
+		*job = stackPop();
+	} else if (queueSize() > 0) {
+		*job = queueDequeue();
+	} else {
+		fail = 1;
+	}
+	pthread_mutex_unlock(&lock);
+	return fail;
+}
+
 __attribute__((noreturn)) void serverMain(void *srvr)
 {
 	this = srvr;
@@ -69,10 +85,21 @@ __attribute__((noreturn)) void serverMain(void *srvr)
 		exit(1);
 	}
 	while (1) {
-		fprintf(this->log, "Queue: %zd; Stack: %zd\n",
-			queueSize(), stackSize());
 		fflush(this->log);
 		sleep(3);
+		fprintf(this->log, "Queue: %zd; Stack: %zd\n",
+			queueSize(), stackSize());
+
+		struct job job;
+		int fail;
+
+		fail = getJob(&job);
+		if (fail) { //there aren't any jobs
+			continue;
+		}
+
+		fprintf(this->log, "Got a job: \"%s\"\n", job.argv[0]);
+		freeJobClone(job);
 	}
 	/*while (shouldRun) {
 		wait(); // reader thread can wake us
