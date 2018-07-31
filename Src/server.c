@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "job.h"
@@ -33,6 +34,8 @@
 
 static struct server *this = NULL;
 static pthread_mutex_t lock;
+static int numSlots;
+static int numRunning;
 
 int serverAddJob(struct job job)
 {
@@ -83,7 +86,6 @@ static int runJob(struct job job)
 	if (pid == -1) {
 		return 1;
 	} else if (pid != 0) {
-		//TODO record pid
 		return 0;
 	}
 
@@ -95,25 +97,46 @@ static int runJob(struct job job)
 	exit(1);
 }
 
-__attribute__((noreturn)) void serverMain(void *srvr)
+/*
+ * Updates running
+ */
+static void monitorChildren()
 {
-	this = srvr;
-	if (pthread_mutex_init(&lock, NULL) != 0) {
-		fprintf(this->err, "Could not initialize mutex\n");
-		exit(1);
-	}
 	while (1) {
-		fflush(this->log);
-		sleep(3);
-		fprintf(this->log, "Queue: %zd; Stack: %zd\n",
-			queueSize(), stackSize());
+		int status;
+		pid_t pid = waitpid(-1, &status, WNOHANG);
+		if (pid == -1) {
+			if (errno == ECHILD) {
+				// all children have been handled
+				return;
+			} else {
+				assert(errno == EINTR);
+				continue;
+			}
+		}
 
+		if (pid == 0) { // no child has a status update
+			return;
+		}
+
+		if (WIFSIGNALED(status)) {
+			numRunning--;
+		} else if(WIFEXITED(status)) {
+			numRunning--;
+			// WEXITSTATUS(status);
+		}
+	}
+}
+
+void startJobs()
+{
+	while (numRunning < numSlots) {
 		struct job job;
 		int fail;
 
 		fail = getJob(&job);
 		if (fail) { //there aren't any jobs
-			continue;
+			return;
 		}
 
 		fail = runJob(job);
@@ -124,16 +147,30 @@ __attribute__((noreturn)) void serverMain(void *srvr)
 		} else {
 			fprintf(this->log, "Began executing \"%s\"\n",
 				job.argv[0]);
+			numRunning++;
 		}
 		freeJobClone(job);
 	}
-	/*while (shouldRun) {
-		wait(); // reader thread can wake us
-		if (queue.peek() fits) {
-			deque
-			run
-		}
-	}*/
+}
+
+__attribute__((noreturn)) void serverMain(void *srvr)
+{
+	this = srvr;
+	numRunning = 0;
+	numSlots = 1; //TODO allow configuration
+	if (pthread_mutex_init(&lock, NULL) != 0) {
+		fprintf(this->err, "Could not initialize mutex\n");
+		exit(1);
+	}
+	while (1) {
+		fflush(this->log);
+		sleep(3);
+		monitorChildren();
+		fprintf(this->log, "Queue: %zd; Stack: %zd; Running: %d\n",
+			queueSize(), stackSize(), numRunning);
+
+		startJobs();
+	}
 }
 
 int getServerDir(const char *path)
