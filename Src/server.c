@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,7 +22,9 @@
 #include <unistd.h>
 
 #include "job.h"
+#include "queue.h"
 #include "server.h"
+#include "stack.h"
 
 //TODO make these names consistent with SFILE_FIFO? or maybe not, because these
 //are not part of the public interface.
@@ -29,13 +32,18 @@
 #define ERR "err.txt"
 
 static struct server *this = NULL;
+static pthread_mutex_t lock;
 
 int serverAddJob(struct job job)
 {
-	(void) job;
-	fprintf(this->err, "Call to unimplemented function %s\n", __func__);
-	fflush(this->err);
-	return 1;
+	pthread_mutex_lock(&lock);
+	if (job.priority) {
+		stackPush(job);
+	} else {
+		queueEnqueue(job);
+	}
+	pthread_mutex_unlock(&lock);
+	return 0;
 }
 
 int serverShutdown(bool killRunning)
@@ -56,8 +64,14 @@ int serverShutdown(bool killRunning)
 __attribute__((noreturn)) void serverMain(void *srvr)
 {
 	this = srvr;
+	if (pthread_mutex_init(&lock, NULL) != 0) {
+		fprintf(this->err, "Could not initialize mutex\n");
+		exit(1);
+	}
 	while (1) {
-		fprintf(this->log, "Server lives!\n");
+		fprintf(this->log, "Queue: %zd; Stack: %zd\n",
+			queueSize(), stackSize());
+		fflush(this->log);
 		sleep(3);
 	}
 	/*while (shouldRun) {
