@@ -123,7 +123,7 @@ int cloneJob(struct job *dest, struct job src)
 	dest->priority = src.priority;
 	dest->argc = src.argc;
 	assert(src.argc >= 0);
-	dest->argv = malloc(sizeof(char*) * ((size_t)src.argc));
+	dest->argv = malloc(sizeof(char*) * ((size_t)src.argc + 1));
 	if (!dest->argv) {
 		return 1;
 	}
@@ -136,6 +136,7 @@ int cloneJob(struct job *dest, struct job src)
 		}
 		memcpy(dest->argv[x], src.argv[x], len);
 	}
+	dest->argv[src.argc] = NULL;
 	return 0;
 fail:
 	for(x--; x >= 0; x--) {

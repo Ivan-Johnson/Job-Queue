@@ -39,6 +39,9 @@ ssize_t serializeJob(struct job job, char *buf, size_t bufLen)
 //job and buf cannot overlap eachother or serialLen
 //
 //Returns 0 on success, nonzero on fail
+//
+//job->argv[job->argc] == NULL. TODO: prior to release, struct job's argc will
+//be removed in favor of such NULL terminated argv's.
 int unserializeJob(struct job *restrict job, char *restrict buf,
 		size_t serialLen) __attribute__((nonnull(1, 2)));
 
