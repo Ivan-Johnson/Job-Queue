@@ -28,7 +28,8 @@
 
 int messengerSendJob(int serverdir, struct job job)
 {
-	int fifo = openat(serverdir, SFILE_FIFO, O_WRONLY | O_NONBLOCK);
+	int fifo = openat(serverdir, SFILE_FIFO,
+			O_WRONLY | O_NONBLOCK | O_CLOEXEC);
 	if (fifo < 0) {
 		if (errno == ENXIO || errno == ENOENT) {
 			puts("The server is not running");
@@ -63,7 +64,7 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 	fprintf(server.log, "Messenger is initializing\n");
 	fflush(server.log);
 	int fifo_read = openat(server.server, SFILE_FIFO,
-			O_RDONLY | O_NONBLOCK);
+			O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	if (fifo_read == -1) {
 		fprintf(server.err, "Could not open fifo for reading\n");
 
@@ -91,9 +92,24 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 			pthread_exit(NULL);
 		}
 		struct job job;
-		unserializeJob(&job, buf, (size_t) s);
-		int status = serverAddJob(job, false);
-		if (status) {
+		int fail = unserializeJob(&job, buf, (size_t) s);
+		if (fail) {
+			fprintf(server.err, "Unserialization failed\n");
+			fflush(server.err);
+			continue;
+		}
+
+		struct job jobTmp = job;
+		fail = cloneJob(&job, jobTmp);
+		if (fail) {
+			fprintf(server.err, "Failed to clone job\n");
+			fflush(server.err);
+			continue;
+		}
+		freeUnserializedJob(jobTmp);
+
+		fail = serverAddJob(job);
+		if (fail) {
 			fprintf(server.err, "Error when scheduling job: %s\n",
 				job.argv[0]);
 			fflush(server.err);
@@ -104,11 +120,14 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 	}
 }
 
-int messengerLaunchServer(int fd)
+int messengerLaunchServer(int fd, unsigned int numSlots)
 {
+	if (numSlots == 0) {
+		numSlots = 1;
+	}
 	int status;
 	struct server server;
-	status = openServer(fd, &server);
+	status = openServer(fd, &server, numSlots);
 	if (status) {
 		return 1;
 	}

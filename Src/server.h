@@ -26,18 +26,22 @@ struct server {
 	int fifo;   // fd of the fifo file used to receive requests (RD_ONLY)
 	FILE *log;  // A file to use in place of the server's stdout
 	FILE *err;  // A file to use in place of the server's stderr
+
+	unsigned int numSlots;
 };
 
 void serverMain(void *srvr) __attribute__((noreturn));
-int serverAddJob(struct job job, bool isPriority);
+int serverAddJob(struct job job);
 int serverShutdown(bool killRunning);
 
 /*
  * Attempts to initialize s in preparation for launching a server.
  *
  * Returns 0 on success, nonzero on failure
+ *
+ * numSlots > 0
  */
-int openServer(int dirFD, struct server *s);
+int openServer(int dirFD, struct server *s, unsigned int numSlots);
 
 void serverClose(struct server s);
 

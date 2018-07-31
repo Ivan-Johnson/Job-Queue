@@ -14,14 +14,18 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "job.h"
+#include "queue.h"
 #include "server.h"
+#include "stack.h"
 
 //TODO make these names consistent with SFILE_FIFO? or maybe not, because these
 //are not part of the public interface.
@@ -29,14 +33,20 @@
 #define ERR "err.txt"
 
 static struct server *this = NULL;
+static pthread_mutex_t lock;
+static unsigned int numRunning;
 
-int serverAddJob(struct job job, bool isPriority)
+int serverAddJob(struct job job)
 {
-	(void) job;
-	(void) isPriority;
-	fprintf(this->err, "Call to unimplemented function %s\n", __func__);
-	fflush(this->err);
-	return 1;
+	pthread_mutex_lock(&lock);
+	if (job.priority) {
+		stackPush(job);
+	} else {
+		queueEnqueue(job);
+	}
+	pthread_mutex_unlock(&lock);
+	//TODO wake server thread
+	return 0;
 }
 
 int serverShutdown(bool killRunning)
@@ -54,20 +64,112 @@ int serverShutdown(bool killRunning)
 	//return !serverRunning
 }
 
+static int getJob(struct job *job)
+{
+	int fail = 0;
+	pthread_mutex_lock(&lock);
+	if (stackSize() > 0) {
+		*job = stackPop();
+	} else if (queueSize() > 0) {
+		*job = queueDequeue();
+	} else {
+		fail = 1;
+	}
+	pthread_mutex_unlock(&lock);
+	return fail;
+}
+
+static int runJob(struct job job)
+{
+	int pid = fork();
+	if (pid == -1) {
+		return 1;
+	} else if (pid != 0) {
+		return 0;
+	}
+
+	execv(job.argv[0], job.argv); //no return unless it fails
+	fprintf(this->err,
+		"execv failed for \"%s\" command with \"%s\"\n",
+		job.argv[0], strerror(errno));
+	fflush(this->err);
+	exit(1);
+}
+
+/*
+ * Updates running
+ */
+static void monitorChildren()
+{
+	while (1) {
+		int status;
+		pid_t pid = waitpid(-1, &status, WNOHANG);
+		if (pid == -1) {
+			if (errno == ECHILD) {
+				// all children have been handled
+				return;
+			} else {
+				assert(errno == EINTR);
+				continue;
+			}
+		}
+
+		if (pid == 0) { // no child has a status update
+			return;
+		}
+
+		if (WIFSIGNALED(status)) {
+			numRunning--;
+		} else if(WIFEXITED(status)) {
+			numRunning--;
+			// WEXITSTATUS(status);
+		}
+	}
+}
+
+void startJobs()
+{
+	while (numRunning < this->numSlots) {
+		struct job job;
+		int fail;
+
+		fail = getJob(&job);
+		if (fail) { //there aren't any jobs
+			return;
+		}
+
+		fail = runJob(job);
+		if (fail) {
+			fprintf(this->err, "Failed to execute job \"%s\"\n",
+				job.argv[0]);
+			fflush(this->err);
+		} else {
+			fprintf(this->log, "Began executing \"%s\"\n",
+				job.argv[0]);
+			numRunning++;
+		}
+		freeJobClone(job);
+	}
+}
+
 __attribute__((noreturn)) void serverMain(void *srvr)
 {
 	this = srvr;
-	while (1) {
-		fprintf(this->log, "Server lives!\n");
-		sleep(3);
+	assert(this->numSlots > 0);
+	numRunning = 0;
+	if (pthread_mutex_init(&lock, NULL) != 0) {
+		fprintf(this->err, "Could not initialize mutex\n");
+		exit(1);
 	}
-	/*while (shouldRun) {
-		wait(); // reader thread can wake us
-		if (queue.peek() fits) {
-			deque
-			run
-		}
-	}*/
+	while (1) {
+		fflush(this->log);
+		sleep(3);
+		monitorChildren();
+		fprintf(this->log, "Queue: %zd; Stack: %zd; Running: %d\n",
+			queueSize(), stackSize(), numRunning);
+
+		startJobs();
+	}
 }
 
 int getServerDir(const char *path)
@@ -77,7 +179,7 @@ int getServerDir(const char *path)
 	mkdir(path, SERVER_DIR_PERMS);
 	//ignore mkdir errors, because it's possible to securely recover from
 	//them if a valid server dir already exists.
-	int fd = open(path, O_RDONLY | O_DIRECTORY);
+	int fd = open(path, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
 	if (fd < 0) {
 		return -1;
 	}
@@ -104,6 +206,7 @@ static struct server serverInitialize(void)
 	s.err = NULL;
 	s.server = -1;
 	s.fifo = -1;
+	s.numSlots = 0;
 	return s;
 }
 
@@ -123,13 +226,16 @@ void serverClose(struct server s)
 	}
 }
 
-int openServer(int dirFD, struct server *s)
+int openServer(int dirFD, struct server *s, unsigned int numSlots)
 {
+	assert(numSlots > 0);
 	*s = serverInitialize();
 	s->server = dirFD;
+	s->numSlots = numSlots;
 
 	int fd;
-	fd = openat(s->server, LOG, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
+	fd = openat(s->server, LOG, O_WRONLY | O_CREAT | O_CLOEXEC,
+		SERVER_DIR_PERMS);
 	if (fd < 0) {
 		serverClose(*s);
 		return 1;
@@ -139,7 +245,8 @@ int openServer(int dirFD, struct server *s)
 		serverClose(*s);
 		return 1;
 	}
-	fd = openat(s->server, ERR, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
+	fd = openat(s->server, ERR, O_WRONLY | O_CREAT | O_CLOEXEC,
+		SERVER_DIR_PERMS);
 	if (fd < 0) {
 		serverClose(*s);
 		return 1;
@@ -150,8 +257,12 @@ int openServer(int dirFD, struct server *s)
 		return 1;
 	}
 
+	//TODO when *launching* the server, we reader creates its own fd. When
+	//scheduling a command, we don't even call this function. So we don't
+	//actually need a fifo fd in server, do we?
 	mkfifoat(s->server, SFILE_FIFO, SERVER_DIR_PERMS);
-	s->fifo = openat(s->server, SFILE_FIFO, O_RDONLY | O_NONBLOCK);
+	s->fifo = openat(s->server, SFILE_FIFO,
+			O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	if (s->fifo < 0) {
 		serverClose(*s);
 		return 1;

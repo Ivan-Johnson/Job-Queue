@@ -50,7 +50,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 		arguments->task = task_undefined;
 		arguments->server = NULL;
 		arguments->cmd = NULL;
-		arguments->numSlots = 1;
+		arguments->numSlots = 0;
 		arguments->priority = false;
 		break;
 	case OPTION_PRIORITY:
@@ -61,12 +61,12 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 		if (end[0] != '\0') {
 			argp_usage(state); //no return
 		}
-		if (val <= 0 || val > INT_MAX) {
-			printf("The number of slots must be in the range [%d, %d]\n",
-				0, INT_MAX);
+		if (val < 0 || val > UINT_MAX) {
+			printf("The number of slots must be in the range [%u, %u]\n",
+				0, UINT_MAX);
 			argp_usage(state); //no return
 		}
-		arguments->numSlots = (int) val;
+		arguments->numSlots = (unsigned int) val;
 		break;
 	case ARGP_KEY_ARG:
 		if (state->arg_num == 0) {
@@ -132,7 +132,7 @@ int fulfilArgs(struct arguments args)
 	struct job job;
 	switch (args.task) {
 	case task_launch:
-		return messengerLaunchServer(server);
+		return messengerLaunchServer(server, args.numSlots);
 	case task_schedule:
 		job.argc = args.cmdCount;
 		job.argv = args.cmd;
