@@ -149,7 +149,7 @@ fail:
 void freeJobClone(struct job job)
 {
 	assert(job.argv && job.argc >= 0);
-	for(int x; x < job.argc; x++) {
+	for(int x = 0; x < job.argc; x++) {
 		free(job.argv[x]);
 	}
 	free(job.argv);
