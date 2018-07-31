@@ -30,10 +30,9 @@
 
 static struct server *this = NULL;
 
-int serverAddJob(struct job job, bool isPriority)
+int serverAddJob(struct job job)
 {
 	(void) job;
-	(void) isPriority;
 	fprintf(this->err, "Call to unimplemented function %s\n", __func__);
 	fflush(this->err);
 	return 1;

@@ -29,7 +29,7 @@ struct server {
 };
 
 void serverMain(void *srvr) __attribute__((noreturn));
-int serverAddJob(struct job job, bool isPriority);
+int serverAddJob(struct job job);
 int serverShutdown(bool killRunning);
 
 /*

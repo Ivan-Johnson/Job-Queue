@@ -92,7 +92,7 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 		}
 		struct job job;
 		unserializeJob(&job, buf, (size_t) s);
-		int status = serverAddJob(job, false);
+		int status = serverAddJob(job);
 		if (status) {
 			fprintf(server.err, "Error when scheduling job: %s\n",
 				job.argv[0]);
