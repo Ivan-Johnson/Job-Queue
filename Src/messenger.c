@@ -97,6 +97,16 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 			fflush(server.err);
 			continue;
 		}
+
+		struct job jobTmp = job;
+		fail = cloneJob(&job, jobTmp);
+		if (fail) {
+			fprintf(server.err, "Failed to clone job\n");
+			fflush(server.err);
+			continue;
+		}
+		freeUnserializedJob(jobTmp);
+
 		int status = serverAddJob(job);
 		if (status) {
 			fprintf(server.err, "Error when scheduling job: %s\n",
