@@ -14,6 +14,8 @@
 #include "job.h"
 
 int messengerSendJob(int serverdir, struct job job);
-int messengerLaunchServer(int serverdir);
+
+//numSlots == 0: use an implementation defined number of slots
+int messengerLaunchServer(int serverdir, unsigned int numSlots);
 
 #endif

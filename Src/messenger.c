@@ -120,11 +120,14 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 	}
 }
 
-int messengerLaunchServer(int fd)
+int messengerLaunchServer(int fd, unsigned int numSlots)
 {
+	if (numSlots == 0) {
+		numSlots = 1;
+	}
 	int status;
 	struct server server;
-	status = openServer(fd, &server);
+	status = openServer(fd, &server, numSlots);
 	if (status) {
 		return 1;
 	}

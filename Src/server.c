@@ -34,8 +34,7 @@
 
 static struct server *this = NULL;
 static pthread_mutex_t lock;
-static int numSlots;
-static int numRunning;
+static unsigned int numRunning;
 
 int serverAddJob(struct job job)
 {
@@ -130,7 +129,7 @@ static void monitorChildren()
 
 void startJobs()
 {
-	while (numRunning < numSlots) {
+	while (numRunning < this->numSlots) {
 		struct job job;
 		int fail;
 
@@ -156,8 +155,8 @@ void startJobs()
 __attribute__((noreturn)) void serverMain(void *srvr)
 {
 	this = srvr;
+	assert(this->numSlots > 0);
 	numRunning = 0;
-	numSlots = 1; //TODO allow configuration
 	if (pthread_mutex_init(&lock, NULL) != 0) {
 		fprintf(this->err, "Could not initialize mutex\n");
 		exit(1);
@@ -207,6 +206,7 @@ static struct server serverInitialize(void)
 	s.err = NULL;
 	s.server = -1;
 	s.fifo = -1;
+	s.numSlots = 0;
 	return s;
 }
 
@@ -226,10 +226,12 @@ void serverClose(struct server s)
 	}
 }
 
-int openServer(int dirFD, struct server *s)
+int openServer(int dirFD, struct server *s, unsigned int numSlots)
 {
+	assert(numSlots > 0);
 	*s = serverInitialize();
 	s->server = dirFD;
+	s->numSlots = numSlots;
 
 	int fd;
 	fd = openat(s->server, LOG, O_WRONLY | O_CREAT | O_CLOEXEC,
