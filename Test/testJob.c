@@ -97,3 +97,20 @@ void testEq()
 		}
 	}
 }
+
+void testClone()
+{
+	for (int x = 0; x < ARR_LEN; x++) {
+		struct job job;
+		int fail = cloneJob(&job, jobs[x]);
+		TEST_ASSERT_FALSE(fail);
+		TEST_ASSERT_TRUE(jobEq(jobs[x], job));
+
+		// verify that cloneJob didn't just copy the pointers
+		TEST_ASSERT_NOT_EQUAL(jobs[x].argv, job.argv);
+		for (int i = 0; i < jobs[x].argc; i++) {
+			TEST_ASSERT_NOT_EQUAL(jobs[x].argv[i], job.argv[i]);
+		}
+		freeJobClone(job);
+	}
+}

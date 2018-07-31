@@ -47,4 +47,8 @@ void freeUnserializedJob(struct job);
 // Returns true if the jobs are equivalent, false otherwise
 bool jobEq(struct job job1, struct job job2);
 
+int cloneJob(struct job *dest, struct job src);
+
+void freeJobClone(struct job job);
+
 #endif

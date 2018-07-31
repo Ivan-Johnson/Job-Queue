@@ -117,3 +117,39 @@ bool jobEq(struct job job1, struct job job2)
 	}
 	return true;
 }
+
+int cloneJob(struct job *dest, struct job src)
+{
+	dest->priority = src.priority;
+	dest->argc = src.argc;
+	assert(src.argc >= 0);
+	dest->argv = malloc(sizeof(char*) * ((size_t)src.argc));
+	if (!dest->argv) {
+		return 1;
+	}
+	int x;
+	for(x = 0; x < src.argc; x++) {
+		size_t len = strlen(src.argv[x]) + 1;
+		dest->argv[x] = malloc(sizeof(char) * len);
+		if (!dest->argv[x]) {
+			goto fail;
+		}
+		memcpy(dest->argv[x], src.argv[x], len);
+	}
+	return 0;
+fail:
+	for(x--; x >= 0; x--) {
+		free(dest->argv[x]);
+	}
+	free(dest->argv);
+	return 1;
+}
+
+void freeJobClone(struct job job)
+{
+	assert(job.argv && job.argc >= 0);
+	for(int x; x < job.argc; x++) {
+		free(job.argv[x]);
+	}
+	free(job.argv);
+}
