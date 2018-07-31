@@ -10,9 +10,21 @@
  * LICENSE: GPL 2.0
  */
 
+#include <stdbool.h>
+
+enum task {
+	task_undefined,
+	task_launch,
+	task_schedule
+};
+
 struct arguments {
+	enum task task;
 	char *server;
-	char *cmd;
+	char **cmd;
+	int cmdCount;
+	int numSlots;
+	bool priority;
 };
 
 struct arguments parseArgs(int argc, char **argv);

@@ -11,9 +11,31 @@
 
 #include <unity.h>
 
+char *args0[] = {"args0_0"};
+struct job job0 = {false, sizeof(args0) / sizeof(char*), args0};
+char *args1[] = {"args1_0", "args1_1", "args1_2"};
+struct job job1 = {false, sizeof(args1) / sizeof(char*), args1};
+char *args2[] = {"args2_0"};
+struct job job2 = {false, sizeof(args2) / sizeof(char*), args2};
+char *args3[] = {"args3_0", "args3_1"};
+struct job job3 = {false, sizeof(args3) / sizeof(char*), args3};
+char *args4[] = {"args4_0", "args4_1", "args4_2", "args4_3", "args4_4"};
+struct job job4 = {false, sizeof(args4) / sizeof(char*), args4};
+char *args5[] = {"args5_0", "args5_1", "args5_2"};
+struct job job5 = {false, sizeof(args5) / sizeof(char*), args5};
+
+#define ARR_LEN 5
+struct job jobs[ARR_LEN];
+
 void setUp()
 {
 	TEST_ASSERT_EQUAL_INT(0, stackSize());
+
+	jobs[0] = job1;
+	jobs[1] = job2;
+	jobs[2] = job3;
+	jobs[3] = job4;
+	jobs[4] = job5;
 }
 
 void tearDown()
@@ -25,7 +47,6 @@ void tearDown()
 void testWatchSize()
 {
 	struct job job;
-	job.cmd = NULL;
 
 	TEST_ASSERT_EQUAL_INT(0, stackSize());
 	stackPush(job);
@@ -52,41 +73,26 @@ void testWatchSize()
 
 void testPeek()
 {
-	struct job job0, job1;
-	job0.cmd = "iowelkjm,ncvxsd";
-	job1.cmd = "oiuwelrkjmncxvw";
-
 	stackPush(job0);
 	stackPush(job1);
 
-	TEST_ASSERT_TRUE(stackPeek().cmd == job1.cmd);
+	TEST_ASSERT_TRUE(jobEq(stackPeek(), job1));
 	stackPop();
 
-	TEST_ASSERT_TRUE(stackPeek().cmd == job0.cmd);
+	TEST_ASSERT_TRUE(jobEq(stackPeek(), job0));
 }
 
 void testPopSimple()
 {
-	struct job job0, job1;
-	job0.cmd = "iowelkjm,ncvxsd";
-	job1.cmd = "oiuwelrkjmncxvw";
-
 	stackPush(job0);
 	stackPush(job1);
 
-	TEST_ASSERT_TRUE(stackPop().cmd == job1.cmd);
-	TEST_ASSERT_TRUE(stackPop().cmd == job0.cmd);
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job1));
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job0));
 }
 
 void testPop()
 {
-	struct job job0, job1, job2, job3, job4;
-	job0.cmd = "0";
-	job1.cmd = "1";
-	job2.cmd = "2";
-	job3.cmd = "3";
-	job4.cmd = "4";
-
 	//state: ∅
 	TEST_ASSERT_EQUAL_INT(0, stackSize());
 
@@ -99,8 +105,8 @@ void testPop()
 	//state: job0, job1, job2, job3, job4
 	TEST_ASSERT_EQUAL_INT(5, stackSize());
 
-	TEST_ASSERT_TRUE(stackPop().cmd == job4.cmd);
-	TEST_ASSERT_TRUE(stackPop().cmd == job3.cmd);
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job4));
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job3));
 
 	//state: job0, job1, job2
 	TEST_ASSERT_EQUAL_INT(3, stackSize());
@@ -111,11 +117,11 @@ void testPop()
 	//state: job0, job1, job2, job4, job3
 	TEST_ASSERT_EQUAL_INT(5, stackSize());
 
-	TEST_ASSERT_TRUE(stackPop().cmd == job3.cmd);
-	TEST_ASSERT_TRUE(stackPop().cmd == job4.cmd);
-	TEST_ASSERT_TRUE(stackPop().cmd == job2.cmd);
-	TEST_ASSERT_TRUE(stackPop().cmd == job1.cmd);
-	TEST_ASSERT_TRUE(stackPop().cmd == job0.cmd);
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job3));
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job4));
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job2));
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job1));
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job0));
 
 	//state: ∅
 	TEST_ASSERT_EQUAL_INT(0, stackSize());
@@ -126,8 +132,8 @@ void testPop()
 	//state: job2, job0
 	TEST_ASSERT_EQUAL_INT(2, stackSize());
 
-	TEST_ASSERT_TRUE(stackPop().cmd == job0.cmd);
-	TEST_ASSERT_TRUE(stackPop().cmd == job2.cmd);
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job0));
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job2));
 
 	//state: ∅
 	TEST_ASSERT_EQUAL_INT(0, stackSize());
@@ -135,14 +141,6 @@ void testPop()
 
 void testGrowth()
 {
-	struct job job0, job1, job2, job3, job4, job5;
-	job0.cmd = "0";
-	job1.cmd = "1";
-	job2.cmd = "2";
-	job3.cmd = "3";
-	job4.cmd = "4";
-	job5.cmd = "5";
-
 	stackPush(job0);
 	size_t cap = stackCurCapacity();
 	for (size_t size = 1; size < cap - 2; size++) {
@@ -178,25 +176,16 @@ void testGrowth()
 
 	//state: job0 x cap - 2, job1, job2, job3, job4, job5
 	//pop to ensure that jobs 1-3 weren't lost in the growth process
-	TEST_ASSERT_TRUE(stackPop().cmd == job5.cmd);
-	TEST_ASSERT_TRUE(stackPop().cmd == job4.cmd);
-	TEST_ASSERT_TRUE(stackPop().cmd == job3.cmd);
-	TEST_ASSERT_TRUE(stackPop().cmd == job2.cmd);
-	TEST_ASSERT_TRUE(stackPop().cmd == job1.cmd);
-	TEST_ASSERT_TRUE(stackPop().cmd == job0.cmd);
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job5));
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job4));
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job3));
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job2));
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job1));
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job0));
 }
 
 void testShrinkage()
 {
-	struct job job0, job1, job2, job3, job4, job5;
-	job0.cmd = "0";
-	job1.cmd = "1";
-	job2.cmd = "2";
-	job3.cmd = "3";
-	job4.cmd = "4";
-	job5.cmd = "5";
-	struct job jobs[] = {job1, job2, job3, job4, job5};
-
 	stackPush(job0);
 	size_t cap = stackCurCapacity();
 	//If we grow once, we can shrink by popping the item at shrinkpoint
@@ -225,19 +214,19 @@ void testShrinkage()
 
 
 	//confirm that our data is still intact
-	TEST_ASSERT_TRUE(stackPop().cmd == job5.cmd);
-	TEST_ASSERT_TRUE(stackPop().cmd == job4.cmd);
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job5));
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job4));
 
 	//confirm that we haven't shrunk yet
 	TEST_ASSERT_EQUAL_INT(shrinkpoint + 1, stackSize());
 	TEST_ASSERT_TRUE(cap < stackCurCapacity());
 
 	//shrink
-	TEST_ASSERT_TRUE(stackPop().cmd == job3.cmd);
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job3));
 	TEST_ASSERT_EQUAL_INT(shrinkpoint, stackSize());
 	TEST_ASSERT_EQUAL_INT(cap, stackCurCapacity());
 
 	//confirm that the top of the stack is still intact
-	TEST_ASSERT_TRUE(stackPop().cmd == job2.cmd);
-	TEST_ASSERT_TRUE(stackPop().cmd == job1.cmd);
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job2));
+	TEST_ASSERT_TRUE(jobEq(stackPop(), job1));
 }

@@ -9,11 +9,15 @@
  *
  * LICENSE: GPL 2.0
  */
+
+#include <stdbool.h>
 #include <sys/types.h>
 
 struct job {
-	// index 0 is the command we run. Indicies [1, argc] are arguments
-	char *cmd;
+	bool priority;
+	int argc;
+	// index 0 is the command we run. Indicies [1, argc) are arguments
+	char **argv;
 };
 
 //Given a *fully initialized job*, modifies buf such that it can be used by
@@ -25,11 +29,22 @@ struct job {
 ssize_t serializeJob(struct job job, char *buf, size_t bufLen)
 	__attribute__((nonnull(2)));
 
-//Always succeeds (when given valid arguments)
+//Memory will be malloc'ed to store argv. To free this memory, call
+//freeUnserializedJob.
 //
-//No memory will be malloc'ed during this call. However, job may contain
-//pointers to data in the buffer.
-void unserializeJob(struct job *job, char *buf, size_t serialLen)
-	__attribute__((nonnull(1, 2)));
+//Note that the char*'s in argv will be pointers to data in buf. As such, Buf
+//should not be modified until the values in job are unneeded, and
+//freeUnserializedJob has been called.
+//
+//job and buf cannot overlap eachother or serialLen
+//
+//Returns 0 on success, nonzero on fail
+int unserializeJob(struct job *restrict job, char *restrict buf,
+		size_t serialLen) __attribute__((nonnull(1, 2)));
+
+void freeUnserializedJob(struct job);
+
+// Returns true if the jobs are equivalent, false otherwise
+bool jobEq(struct job job1, struct job job2);
 
 #endif

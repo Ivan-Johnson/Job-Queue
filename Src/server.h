@@ -23,7 +23,7 @@
 
 struct server {
 	int server; // fd of the main server directory
-	int fifo;   // fd of the fifo file used to receive requests (WR_ONLY)
+	int fifo;   // fd of the fifo file used to receive requests (RD_ONLY)
 	FILE *log;  // A file to use in place of the server's stdout
 	FILE *err;  // A file to use in place of the server's stderr
 };
@@ -32,19 +32,21 @@ void serverMain(void *srvr) __attribute__((noreturn));
 int serverAddJob(struct job job, bool isPriority);
 int serverShutdown(bool killRunning);
 
-enum serverInitCode {
-	SIC_initialized = 0, // success
-	SIC_failed,          // generic failure code
-	SIC_running,         // failed because a server is already using path
-};
 /*
  * Attempts to initialize s in preparation for launching a server.
  *
- * s can be used to launch a server if and only if SS_initialized is
- * returned.
+ * Returns 0 on success, nonzero on failure
  */
-enum serverInitCode serverOpen(const char *path, struct server *s);
+int openServer(int dirFD, struct server *s);
 
 void serverClose(struct server s);
+
+//Create an empty server directory at the specified path and returns a file
+//descriptor to it. If the specified directory already exists, and it has the
+//correct permissions, simply return a file descriptor to it.
+//
+//Returns -1 on failure, and returns a non-negative file descriptor to a
+//directory on success.
+int getServerDir(const char *path);
 
 #endif
