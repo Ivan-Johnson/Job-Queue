@@ -12,9 +12,8 @@
 #include <stdbool.h>
 
 #include "job.h"
-#include "server.h"
 
-int messengerSendJob(struct server server, struct job job);
-int messengerGetServer(const char *path, struct server *server);
+int messengerSendJob(int serverdir, struct job job);
+int messengerLaunchServer(int serverdir);
 
 #endif

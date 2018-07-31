@@ -17,6 +17,7 @@
 #include "job.h"
 #include "jormungandr.h"
 #include "messenger.h"
+#include "server.h"
 
 #define OPTION_PRIORITY 'p'
 #define OPTION_NUMSLOTS 's'
@@ -121,45 +122,34 @@ struct arguments parseArgs(int argc, char **argv)
 
 int fulfilArgs(struct arguments args)
 {
-	printf("Server is %s\n", args.server);
-	puts("cmd is as follows:");
-	for (int x = 0; x < args.cmdCount; x++) {
-		printf("cmd arg %d: %s\n", x, args.cmd[x]);
-	}
-	puts("(cmd fin)");
-	printf("Server slots will be set to %d\n", args.numSlots);
-	printf("The task %s a priority\n", args.priority?"is":"is not");
-	char *task;
-	switch (args.task) {
-	case task_undefined:
-		task = "task_undefined";
-		break;
-	case task_launch:
-		task = "task_launch";
-		break;
-	case task_schedule:
-		task = "task_schedule";
-		break;
-	default:
-		assert(false);
-	}
-	printf("Our task is %s\n", task);
-	return 0;
-
-	int status;
-	struct server server;
-	status = messengerGetServer(args.server, &server);
-	if (status) {
-		puts("Error when getting server");
+	int server = getServerDir(args.server);
+	if (server < 0) {
+		puts("Could not get serverdir");
 		return 1;
 	}
 
-	if (args.cmd == NULL) {
-		return 0;
-	}
+	int fail;
 	struct job job;
-	job.argv = args.cmd;
-	return messengerSendJob(server, job);
+	switch (args.task) {
+	case task_launch:
+		return messengerLaunchServer(server);
+	case task_schedule:
+		job.argc = args.cmdCount;
+		job.argv = args.cmd;
+		job.priority = args.priority;
+
+		fail = messengerSendJob(server, job);
+		if (fail) {
+			puts("Failed to send job");
+		} else {
+			puts("Sent job");
+		}
+		return 0;
+	case task_undefined:
+		exit(1);
+	default:
+		exit(1);
+	}
 }
 
 #ifndef TEST

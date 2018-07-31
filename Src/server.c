@@ -70,59 +70,31 @@ __attribute__((noreturn)) void serverMain(void *srvr)
 	}*/
 }
 
-static int openServerDir(const char *path, int *fileDescriptor)
+int getServerDir(const char *path)
 {
 	int status;
 
 	mkdir(path, SERVER_DIR_PERMS);
-	//ignore mkdir errors, because it's possible to recover from them
-	//if a valid server dir already exists.
+	//ignore mkdir errors, because it's possible to securely recover from
+	//them if a valid server dir already exists.
 	int fd = open(path, O_RDONLY | O_DIRECTORY);
-	if (fd == -1) {
-		return 1;
+	if (fd < 0) {
+		return -1;
 	}
 
 	struct stat st;
 	status = fstat(fd, &st);
 	if (status) {
-		return 1;
+		return -1;
 	}
 	if (st.st_uid != geteuid()) {
-		return 1;
+		return -1;
+	}
+	if ((st.st_mode & 0777) != SERVER_DIR_PERMS) {
+		return -1;
 	}
 
-	*fileDescriptor = fd;
-	return 0;
-}
-
-// opens the existing fifo name in the directory specified by fd. Only succeeds
-// if there's something already reading from the fifo. On failure, fdFIFO is set
-// to -1.
-static enum serverInitCode openFIFO(int serverfd, const char *name, int *fdFIFO)
-{
-	int status;
-	mkfifoat(serverfd, name, SERVER_DIR_PERMS);
-	int fd = openat(serverfd, name, O_WRONLY | O_NONBLOCK);
-	*fdFIFO = fd;
-	if (fd >= 0) {
-		struct stat st;
-		status = fstat(fd, &st);
-		if (status) {
-			close(fd);
-			return SIC_failed;
-		}
-		if (!S_ISFIFO(st.st_mode)) {
-			close(fd);
-			return SIC_failed;
-		}
-		return SIC_running;
-	} else {
-		if (errno == ENXIO) {
-			return SIC_initialized;
-		} else {
-			return SIC_failed;
-		}
-	}
+	return fd;
 }
 
 static struct server serverInitialize(void)
@@ -151,41 +123,38 @@ void serverClose(struct server s)
 	}
 }
 
-enum serverInitCode serverOpen(const char *path, struct server *s)
+int openServer(int dirFD, struct server *s)
 {
 	*s = serverInitialize();
-
-	int status;
-
-	status = openServerDir(path, &s->server);
-	if (status) {
-		serverClose(*s);
-		return SIC_failed;
-	}
+	s->server = dirFD;
 
 	int fd;
 	fd = openat(s->server, LOG, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
-	if (fd == -1) {
+	if (fd < 0) {
 		serverClose(*s);
-		return SIC_failed;
+		return 1;
 	}
 	s->log = fdopen(fd, "a");
 	if (!s->log) {
 		serverClose(*s);
-		return SIC_failed;
+		return 1;
 	}
-
 	fd = openat(s->server, ERR, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
-	if (fd == -1) {
+	if (fd < 0) {
 		serverClose(*s);
-		return SIC_failed;
+		return 1;
 	}
 	s->err = fdopen(fd, "a");
 	if (!s->err) {
 		serverClose(*s);
-		return SIC_failed;
+		return 1;
 	}
 
-	//TODO close fd's if we can't open FIFO
-	return openFIFO(s->server, SFILE_FIFO, &s->fifo);
+	mkfifoat(s->server, SFILE_FIFO, SERVER_DIR_PERMS);
+	s->fifo = openat(s->server, SFILE_FIFO, O_RDONLY | O_NONBLOCK);
+	if (s->fifo < 0) {
+		serverClose(*s);
+		return 1;
+	}
+	return 0;
 }

@@ -26,17 +26,35 @@
 #include "messenger.h"
 #include "server.h"
 
-int messengerSendJob(struct server server, struct job job)
+int messengerSendJob(int serverdir, struct job job)
 {
+	int fifo = openat(serverdir, SFILE_FIFO, O_WRONLY | O_NONBLOCK);
+	if (fifo < 0) {
+		if (errno == ENXIO || errno == ENOENT) {
+			puts("The server is not running");
+		}
+		return 1;
+	}
+
 	char buf[PIPE_BUF];
 	ssize_t len = serializeJob(job, buf, PIPE_BUF);
 	if (len == -1) {
-		puts("The given job does not fit in our buffer");
+		puts("The given command is too long");
 		return 1;
 	}
 	assert(len >= 0);
-	ssize_t s = (ssize_t) write(server.fifo, buf, (size_t) len);
-	return s != len;
+	puts("Sending job");
+	ssize_t s = (ssize_t) write(fifo, buf, (size_t) len);
+	if (s == -1) {
+		printf("Failed to send: %s\n", strerror(errno));
+		return 1;
+	} else if (s != len) {
+		//This should never happen, because we're limiting our message
+		//to PIPE_BUF bytes
+		puts("Sent a partial message??");
+		return 1;
+	}
+	return 0;
 }
 
 __attribute__((noreturn)) static void* messengerReader(void *srvr)
@@ -81,29 +99,24 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 			fflush(server.err);
 		} else {
 			fprintf(server.log, "Scheduled job: %s\n", job.argv[0]);
+			fflush(server.log);
 		}
 	}
 }
 
-int messengerGetServer(const char *path, struct server *server)
+int messengerLaunchServer(int fd)
 {
 	int status;
-	status = serverOpen(path, server);
-	if (status == SIC_running) {
-		puts("Server is already running");
-		return 0;
-	} else if (status == SIC_failed) {
-		puts("SIC_failed");
-		return 1;
-	} else if (status != SIC_initialized) {
-		puts("Invalid SIC code?");
+	struct server server;
+	status = openServer(fd, &server);
+	if (status) {
 		return 1;
 	}
 
 	int pid = fork();
 	if (pid == -1) {
 		puts("Failed to fork a server");
-		// TODO: close fd's in server
+		serverClose(server);
 		return 1;
 	} else if (pid != 0) {
 		// Origional process immediately returns successfully
@@ -113,17 +126,17 @@ int messengerGetServer(const char *path, struct server *server)
 
 	status = setsid();
 	if (status == -1) {
-		fprintf(server->err, "Failed to setsid: %s\n", strerror(errno));
+		fprintf(server.err, "Failed to setsid: %s\n", strerror(errno));
 		exit(1);
 	}
 
 	pthread_t unused;
-	status = pthread_create(&unused, NULL, messengerReader, server);
+	status = pthread_create(&unused, NULL, messengerReader, (void*) &server);
 	if (status) {
-		fprintf(server->err, "Failed to start reader thread: %s\n",
+		fprintf(server.err, "Failed to start reader thread: %s\n",
 			strerror(status));
 		exit(1);
 	}
 
-	serverMain(server);
+	serverMain((void*) &server);
 }
