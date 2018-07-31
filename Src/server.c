@@ -77,6 +77,24 @@ static int getJob(struct job *job)
 	return fail;
 }
 
+static int runJob(struct job job)
+{
+	int pid = fork();
+	if (pid == -1) {
+		return 1;
+	} else if (pid != 0) {
+		//TODO record pid
+		return 0;
+	}
+
+	execv(job.argv[0], job.argv); //no return unless it fails
+	fprintf(this->err,
+		"execv failed for \"%s\" command with \"%s\"\n",
+		job.argv[0], strerror(errno));
+	fflush(this->err);
+	exit(1);
+}
+
 __attribute__((noreturn)) void serverMain(void *srvr)
 {
 	this = srvr;
@@ -98,7 +116,15 @@ __attribute__((noreturn)) void serverMain(void *srvr)
 			continue;
 		}
 
-		fprintf(this->log, "Got a job: \"%s\"\n", job.argv[0]);
+		fail = runJob(job);
+		if (fail) {
+			fprintf(this->err, "Failed to execute job \"%s\"\n",
+				job.argv[0]);
+			fflush(this->err);
+		} else {
+			fprintf(this->log, "Began executing \"%s\"\n",
+				job.argv[0]);
+		}
 		freeJobClone(job);
 	}
 	/*while (shouldRun) {
