@@ -86,3 +86,14 @@ void testIdentity()
 		freeUnserializedJob(jOut);
 	}
 }
+
+void testEq()
+{
+	for (int x = 0; x < ARR_LEN; x++) {
+		struct job jA = jobs[x];
+		for (int y = 0; y < ARR_LEN; y++) {
+			struct job jB = jobs[y];
+			TEST_ASSERT_EQUAL(x==y, jobEq(jA, jB));
+		}
+	}
+}
