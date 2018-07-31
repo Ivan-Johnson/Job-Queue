@@ -107,8 +107,8 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 		}
 		freeUnserializedJob(jobTmp);
 
-		int status = serverAddJob(job);
-		if (status) {
+		fail = serverAddJob(job);
+		if (fail) {
 			fprintf(server.err, "Error when scheduling job: %s\n",
 				job.argv[0]);
 			fflush(server.err);
