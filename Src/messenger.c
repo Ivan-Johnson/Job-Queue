@@ -91,7 +91,12 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 			pthread_exit(NULL);
 		}
 		struct job job;
-		unserializeJob(&job, buf, (size_t) s);
+		int fail = unserializeJob(&job, buf, (size_t) s);
+		if (fail) {
+			fprintf(server.err, "Unserialization failed\n");
+			fflush(server.err);
+			continue;
+		}
 		int status = serverAddJob(job);
 		if (status) {
 			fprintf(server.err, "Error when scheduling job: %s\n",
