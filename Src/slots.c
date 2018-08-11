@@ -21,46 +21,80 @@ struct slot {
 };
 
 // numSlots > 0 indicates that the slots module is initialized properly
-unsigned int numSlots = 0;
+unsigned int num = 0;
 struct slot *slots;
-pid_t *scratch;
 
-int slotsMalloc(unsigned int n)
+int slotsMalloc(unsigned int c)
 {
-	assert(n > 0);
-	assert(numSlots == 0);
-	exit(EXIT_FAILURE); // not yet implemented
+	assert(c > 0);
+	assert(num == 0);
+	num = c;
+
+	slots = malloc(sizeof(struct slot) * num);
+	if (!slots) {
+		num = 0;
+		return 1;
+	}
+
+	for (unsigned int a = 0; a < num; a++) {
+		slots[a].availible = true;
+		slots[a].pid = -1;
+	}
+
+	return 0;
 }
 
 void slotsFree()
 {
-	assert(numSlots > 0);
-	exit(EXIT_FAILURE); // not yet implemented
+	assert(num > 0);
+	free(slots);
+	num = 0;
 }
 
 unsigned int slotsAvailible()
 {
-	assert(numSlots > 0);
-	// could cache result, but why bother optimizing prematurely?
-	exit(EXIT_FAILURE); // not yet implemented
-}
-
-int slotsRegister(pid_t pid, unsigned int n, unsigned int *slots)
-{
-	assert(numSlots > 0);
-	exit(EXIT_FAILURE); // not yet implemented
-	(void) pid;
-	for (unsigned int x = 0; x < n; x++) {
-		// find slot
-		if (slots != NULL) {
-			//slots[x] = slot;
+	assert(num > 0);
+	// do not optimize; Ο(num) is sufficiently fast
+	unsigned int count = 0;
+	for (unsigned int x = 0; x < num; x++) {
+		if (slots[x].availible) {
+			count++;
 		}
 	}
+	return count;
+}
+
+int slotsRegister(pid_t pid, unsigned int count, unsigned int *slotv)
+{
+	assert(num > 0);
+	if (count > num) {
+		return 1;
+	}
+	static unsigned int slot = 0;
+	unsigned int slot_init = slot;
+	for (unsigned int x = 0; x < count; x++) {
+		while (!slots[slot].availible) {
+			slot = (slot + 1) % num;
+			assert(slot != slot_init);
+		}
+
+		slots[slot].availible = false;
+		slots[slot].pid = pid;
+
+		if (slotv != NULL) {
+			slotv[x] = slot;
+		}
+	}
+	return 0;
 }
 
 void slotsRelease(pid_t pid)
 {
-	assert(numSlots > 0);
-	(void) pid;
-	exit(EXIT_FAILURE); // not yet implemented
+	assert(num > 0);
+	// do not optimize; Ο(num) is sufficiently fast
+	for (unsigned int x = 0; x < num; x++) {
+		if (slots[x].pid == pid) {
+			slots[x].availible = true;
+		}
+	}
 }
