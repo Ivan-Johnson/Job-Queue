@@ -65,8 +65,9 @@ void register_(pid_t pid, unsigned int numSlots)
 	for (unsigned int a = 0; a < numSlots; a++) {
 		pids[pid].slots[a] = NUM_SLOTS;
 	}
-	int code = slotsRegister(pid, numSlots, pids[pid].slots);
-	TEST_ASSERT_EQUAL_INT(0, code);
+	int fail = slotsReserveSet(numSlots, pids[pid].slots);
+	TEST_ASSERT_EQUAL_INT(0, fail);
+	slotsRegisterSet(pid, numSlots, pids[pid].slots);
 	validate();
 }
 
@@ -156,34 +157,4 @@ void test_pidreuse()
 	release(0);
 	release(1);
 	// a: ∅, b: ∅
-}
-
-/*
- * Try registering when slotv is null.
- */
-void test_nullslotv()
-{
-	assert(NUM_PIDS >= 5);
-	assert(NUM_SLOTS == 2);
-
-	// a: ∅, b: ∅
-	TEST_ASSERT_EQUAL_INT(0, slotsRegister(0, 1, NULL));
-	// a: 0, b: ∅
-	slotsRelease(0);
-	// a: ∅, b: ∅
-	TEST_ASSERT_EQUAL_INT(0, slotsRegister(1, 1, NULL));
-	// a: 1, b: ∅
-	TEST_ASSERT_EQUAL_INT(0, slotsRegister(2, 1, NULL));
-	// a: 1, b: 2
-	slotsRelease(1);
-	// a: ∅, b: 2
-	TEST_ASSERT_EQUAL_INT(0, slotsRegister(3, 1, NULL));
-	// a: 3, b: 2
-	slotsRelease(3);
-	// a: ∅, b: 2
-	slotsRelease(2);
-	// a: ∅, b: ∅
-	TEST_ASSERT_EQUAL_INT(0, slotsRegister(4, 1, NULL));
-	// a: 4, b: ∅
-	slotsRelease(4);
 }

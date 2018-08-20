@@ -64,10 +64,10 @@ unsigned int slotsAvailible()
 	return count;
 }
 
-int slotsRegister(pid_t pid, unsigned int count, unsigned int *slotv)
+int slotsReserveSet(unsigned int count, unsigned int *slotv)
 {
 	assert(num > 0);
-	if (count > num) {
+	if (slotsAvailible() < count) {
 		return 1;
 	}
 	static unsigned int slot = 0;
@@ -79,13 +79,27 @@ int slotsRegister(pid_t pid, unsigned int count, unsigned int *slotv)
 		}
 
 		slots[slot].availible = false;
-		slots[slot].pid = pid;
+		slots[slot].pid = -1;
 
-		if (slotv != NULL) {
-			slotv[x] = slot;
-		}
+		slotv[x] = slot;
 	}
 	return 0;
+}
+
+void slotsUnreserveSet(unsigned int count, unsigned int *slotv)
+{
+	for (unsigned int x = 0; x < count; x++) {
+		unsigned int slot = slotv[x];
+		slots[slot].availible = true;
+	}
+}
+
+void slotsRegisterSet(pid_t pid, unsigned int count, unsigned int *slotv)
+{
+	for (unsigned int x = 0; x < count; x++) {
+		unsigned int slot = slotv[x];
+		slots[slot].pid = pid;
+	}
 }
 
 void slotsRelease(pid_t pid)

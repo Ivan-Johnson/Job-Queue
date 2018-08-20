@@ -37,19 +37,43 @@ void slotsFree();
 // The slotsMalloc function must have already been called.
 unsigned int slotsAvailible();
 
-// Registers slotc slots for the process with pid pid.
+// Reserves a set of count slots for later use.
 //
-// The given pid cannot currently be registered.
+// slotv must point to a buffer of sufficient size to store count unsigned ints.
 //
-// Returns 0 if the slots have been successfully alocated, returns non-zero
-// otherwise. (In particular, note that slotsRegister will fail if there are
-// fewer than slotc availible slots)
+// Returns 0 if the set has successfully been reserved; returns non-zero
+// otherwise.
 //
-// If slotv is non-null, then slotv[0] through slotv[slotc-1] will be set to the
-// indicies of the slots that are to be used by pid. These values will be in the
-// range [0, slotc). They are also guaranteed to only be used once accross all
-// registered processes.
-int slotsRegister(pid_t pid, unsigned int slotc, unsigned int *slotv);
+// On success, slotv[0] through slotv[count-1] will be set to the indicies of
+// the slots that are part of this set. These values will be in the range [0,
+// slotc). Each value is guaranteed to not match any value that has been
+// reserved for any pid.
+//
+// On success, the next function call to slots MUST be slotsRegisterSet or
+// slotsUnreserveSet, and it must be passed the same count and slotv
+// values. Making any other function call results in undefined behavior.
+int slotsReserveSet(unsigned int count, unsigned int *slotv) __attribute__((nonnull (2)));
+
+// This function's behavior is only defined when the prior function call was to
+// slotsReserveSet with the same values for count, and the same values in the
+// array slotv[0..count-1].
+//
+// If the given pid is already defined, then the behavior of this function is
+// undefined.
+//
+// This registers the set of slots returned from slotsReserveSet as being
+// associated with pid. To free these slots for use by a different process, call
+// slotsRelease.
+void slotsRegisterSet(pid_t pid, unsigned int count, unsigned int *slotv) __attribute__((nonnull (3)));
+
+
+// This function's behavior is only defined when the prior function call was to
+// slotsReserveSet with the same values for count, and the same values in the
+// array slotv[0..count-1].
+//
+// The slots allocated by slotsReserveSet are freed by this function so that
+// they may be used by other processes.
+void slotsUnreserveSet(unsigned int count, unsigned int *slotv) __attribute__((nonnull (2)));
 
 // "Unregisters" the given pid, and frees its slot for reuse
 //
