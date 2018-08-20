@@ -26,6 +26,7 @@
 #include "queue.h"
 #include "server.h"
 #include "stack.h"
+#include "slots.h"
 
 //TODO make these names consistent with SFILE_FIFO? or maybe not, because these
 //are not part of the public interface.
@@ -34,7 +35,6 @@
 
 static struct server *this = NULL;
 static pthread_mutex_t lock;
-static unsigned int numRunning;
 
 int serverAddJob(struct job job)
 {
@@ -81,10 +81,21 @@ static int getJob(struct job *job)
 
 static int runJob(struct job job)
 {
+	unsigned int slots[1];
+	unsigned int numslot = 1;
+	assert(slotsAvailible() >= numslot);
+
+	int fail = slotsReserveSet(numslot, slots);
+	if (fail) {
+		return 1;
+	}
+
 	int pid = fork();
 	if (pid == -1) {
+		slotsUnreserveSet(numslot, slots);
 		return 1;
 	} else if (pid != 0) {
+		slotsRegisterSet(pid, numslot, slots);
 		return 0;
 	}
 
@@ -119,17 +130,18 @@ static void monitorChildren()
 		}
 
 		if (WIFSIGNALED(status)) {
-			numRunning--;
+			slotsRelease(pid);
+			// WTERMSIG(status)
 		} else if(WIFEXITED(status)) {
-			numRunning--;
-			// WEXITSTATUS(status);
+			slotsRelease(pid);
+			// WEXITSTATUS(status)
 		}
 	}
 }
 
 void startJobs()
 {
-	while (numRunning < this->numSlots) {
+	while (slotsAvailible() > 0) {
 		struct job job;
 		int fail;
 
@@ -146,7 +158,6 @@ void startJobs()
 		} else {
 			fprintf(this->log, "Began executing \"%s\"\n",
 				job.argv[0]);
-			numRunning++;
 		}
 		freeJobClone(job);
 	}
@@ -156,17 +167,21 @@ __attribute__((noreturn)) void serverMain(void *srvr)
 {
 	this = srvr;
 	assert(this->numSlots > 0);
-	numRunning = 0;
 	if (pthread_mutex_init(&lock, NULL) != 0) {
 		fprintf(this->err, "Could not initialize mutex\n");
+		exit(1);
+	}
+	int fail = slotsMalloc(this->numSlots);
+	if (fail) {
+		fprintf(this->err, "Could not initialize slots module\n");
 		exit(1);
 	}
 	while (1) {
 		fflush(this->log);
 		sleep(3);
 		monitorChildren();
-		fprintf(this->log, "Queue: %zd; Stack: %zd; Running: %d\n",
-			queueSize(), stackSize(), numRunning);
+		fprintf(this->log, "Queue: %zd; Stack: %zd; free slots: %u\n",
+			queueSize(), stackSize(), slotsAvailible());
 
 		startJobs();
 	}
