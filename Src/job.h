@@ -14,6 +14,7 @@
 #include <sys/types.h>
 
 struct job {
+	unsigned int slots;
 	bool priority;
 	int argc;
 	// index 0 is the command we run. Indicies [1, argc) are arguments

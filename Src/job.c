@@ -20,6 +20,7 @@
 #include "job.h"
 
 //serialized format is as follows:
+//sizeof(uint) bytes: unsigned int slots
 //sizeof(bool) bytes: priority bool
 //sizeof(int) bytes: argc int
 //sizeof(char) * (strlen(argv[x]) + 1) bytes: (repeated argc times)
@@ -29,6 +30,14 @@ ssize_t serializeJob(struct job job, char *buf, size_t bufLen)
 {
 	size_t space = bufLen;
 	size_t len;
+
+	len = sizeof(unsigned int);
+	if (len > space) {
+		return -1;
+	}
+	space -= len;
+	memcpy(buf, &job.slots, len);
+	buf += len;
 
 	len = sizeof(bool);
 	if (len > space) {
@@ -67,9 +76,11 @@ int unserializeJob(struct job *restrict job, char *restrict buf,
 	size_t remLen = serialLen; //remaining length
 	size_t len;
 
-	len = sizeof(bool) + sizeof(int);
+	len = sizeof(unsigned int) + sizeof(bool) + sizeof(int);
 	assert(len <= remLen);
 	remLen -= len;
+	memcpy(&job->slots, buf, sizeof(unsigned int));
+	buf += sizeof(unsigned int);
 	memcpy(&job->priority, buf, sizeof(bool));
 	buf += sizeof(bool);
 	memcpy(&job->argc, buf, sizeof(int));
@@ -99,6 +110,9 @@ void freeUnserializedJob(struct job job)
 // Returns 0 if the jobs are equivalent, nonzero otherwise
 bool jobEq(struct job job1, struct job job2)
 {
+	if (job1.slots != job2.slots) {
+		return false;
+	}
 	if (job1.priority != job2.priority) {
 		return false;
 	}
@@ -120,6 +134,7 @@ bool jobEq(struct job job1, struct job job2)
 
 int cloneJob(struct job *dest, struct job src)
 {
+	dest->slots = src.slots;
 	dest->priority = src.priority;
 	dest->argc = src.argc;
 	assert(src.argc >= 0);
