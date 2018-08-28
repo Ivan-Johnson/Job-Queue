@@ -33,6 +33,9 @@
 #define LOG "log.txt"
 #define ERR "err.txt"
 
+#define SLOT_ENVVAR "CUDA_VISIBLE_DEVICES"
+#define MAX_ENVAL_LEN 10000
+
 static struct server *this = NULL;
 static pthread_mutex_t lock;
 
@@ -79,6 +82,29 @@ static int getJob(struct job *job)
 	return fail;
 }
 
+static int constructEnvval(size_t slotc, unsigned int *slotv, size_t buflen, char *buf)
+{
+	assert(slotc > 0);
+	size_t offset = 0;
+
+	for (size_t s = 0; s < slotc; s++) {
+		size_t space = buflen - offset;
+		char *fstring;
+		if (s == slotc - 1) {
+			fstring = "%u";
+		} else {
+			fstring = "%u,";
+		}
+		size_t chars = (size_t) snprintf(buf + offset, space,
+				fstring, slotv[s]);
+		if (chars == space) {
+			return 1;
+		}
+		offset += chars;
+	}
+	return 0;
+}
+
 static int runJob(struct job job)
 {
 	unsigned int slots[1];
@@ -87,6 +113,18 @@ static int runJob(struct job job)
 
 	int fail = slotsReserveSet(numslot, slots);
 	if (fail) {
+		return 1;
+	}
+
+	char envval[MAX_ENVAL_LEN];
+	fail = constructEnvval(numslot, slots, MAX_ENVAL_LEN, envval);
+	if (fail) {
+		slotsUnreserveSet(numslot, slots);
+		return 1;
+	}
+	fail = setenv(SLOT_ENVVAR, envval, true);
+	if (fail) {
+		slotsUnreserveSet(numslot, slots);
 		return 1;
 	}
 
