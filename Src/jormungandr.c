@@ -20,7 +20,7 @@
 #include "server.h"
 
 #define OPTION_PRIORITY 'p'
-#define OPTION_NUMSLOTS 's'
+#define OPTION_SLOTSMAX 's'
 
 const char *argp_program_version =
 	"Jörmungandr v0.2.0-alpha\n"
@@ -30,10 +30,10 @@ const char *argp_program_version =
 const char *argp_program_bug_address = "<git@IvanJohnson.net>";
 static const char doc[] = "Jörmungandr -- a tool running a queue of jobs";
 static const char args_doc[] =
-	"launch <serverdir> [-s numslots] [--numslots=numslots]\n"
+	"launch <serverdir> [-s slots] [--slotsmax=slots]\n"
 	"schedule <serverdir> [-p] [--priority] -- <cmd> [args...]";
 static struct argp_option options[] = {
-	{"numslots", OPTION_NUMSLOTS, "numslots", OPTION_NO_USAGE, "Specifies the number of slots to start servers with", 0},
+	{"slotsmax", OPTION_SLOTSMAX, "slotsmax", OPTION_NO_USAGE, "Specifies the number of slots to start servers with", 0},
 	{"priority", OPTION_PRIORITY, 0,          OPTION_NO_USAGE, "Put the given command at the front of the queue",     0},
 	{0,0,0,0,0,0}
 };
@@ -50,13 +50,13 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 		arguments->task = task_undefined;
 		arguments->server = NULL;
 		arguments->cmd = NULL;
-		arguments->numSlots = 0;
+		arguments->slotsMax = 0;
 		arguments->priority = false;
 		break;
 	case OPTION_PRIORITY:
 		arguments->priority = true;
 		break;
-	case OPTION_NUMSLOTS:
+	case OPTION_SLOTSMAX:
 		val = strtol(arg, &end, 10); //base 10
 		if (end[0] != '\0') {
 			argp_usage(state); //no return
@@ -66,7 +66,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 				0, UINT_MAX);
 			argp_usage(state); //no return
 		}
-		arguments->numSlots = (unsigned int) val;
+		arguments->slotsMax = (unsigned int) val;
 		break;
 	case ARGP_KEY_ARG:
 		if (state->arg_num == 0) {
@@ -132,7 +132,7 @@ int fulfilArgs(struct arguments args)
 	struct job job;
 	switch (args.task) {
 	case task_launch:
-		return messengerLaunchServer(server, args.numSlots);
+		return messengerLaunchServer(server, args.slotsMax);
 	case task_schedule:
 		job.argc = args.cmdCount;
 		job.argv = args.cmd;
