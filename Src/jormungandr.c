@@ -21,6 +21,7 @@
 
 #define OPTION_PRIORITY 'p'
 #define OPTION_SLOTSMAX 's'
+#define OPTION_SLOTSUSE 'c'
 
 const char *argp_program_version =
 	"Jörmungandr v0.2.0-alpha\n"
@@ -31,19 +32,36 @@ const char *argp_program_bug_address = "<git@IvanJohnson.net>";
 static const char doc[] = "Jörmungandr -- a tool running a queue of jobs";
 static const char args_doc[] =
 	"launch <serverdir> [-s slots] [--slotsmax=slots]\n"
-	"schedule <serverdir> [-p] [--priority] -- <cmd> [args...]";
+	"schedule <serverdir> [-c slots] [--slotsuse=slots] [-p] [--priority] -- <cmd> [args...]";
 static struct argp_option options[] = {
-	{"slotsmax", OPTION_SLOTSMAX, "slotsmax", OPTION_NO_USAGE, "Specifies the number of slots to start servers with", 0},
-	{"priority", OPTION_PRIORITY, 0,          OPTION_NO_USAGE, "Put the given command at the front of the queue",     0},
-	{0,0,0,0,0,0}
+	{"slotsmax", OPTION_SLOTSMAX, "slots", OPTION_NO_USAGE, "Specifies the number of slots to start servers with", 0},
+	{"priority", OPTION_PRIORITY, 0,       OPTION_NO_USAGE, "Put the given command at the front of the queue",     0},
+	{"slotsuse", OPTION_SLOTSUSE, "slots", OPTION_NO_USAGE, "How many slots the given command occupies",           0},
+	{0, 0, 0, 0, 0, 0}
 };
+
+// Returns 0 on success, 1 on out of bounds, and other values for other
+// problems.
+static int parseUInt(char *string, unsigned int *out)
+{
+	char *end;
+	long val = strtol(string, &end, 10); //base 10
+	if (end[0] != '\0') {
+		return 2;
+	}
+	if (val < 0 || val > UINT_MAX) {
+		return 1;
+	}
+	*out = (unsigned int) val;
+	return 0;
+}
 
 static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
 	struct arguments *arguments = state->input;
 
-	char *end;
-	long val;
+	int fail;
+	unsigned int val;
 
 	switch (key) {
 	case ARGP_KEY_INIT:
@@ -51,22 +69,33 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 		arguments->server = NULL;
 		arguments->cmd = NULL;
 		arguments->slotsMax = 0;
+		arguments->slotsUse = 1;
 		arguments->priority = false;
 		break;
 	case OPTION_PRIORITY:
 		arguments->priority = true;
 		break;
-	case OPTION_SLOTSMAX:
-		val = strtol(arg, &end, 10); //base 10
-		if (end[0] != '\0') {
-			argp_usage(state); //no return
-		}
-		if (val < 0 || val > UINT_MAX) {
+	case OPTION_SLOTSUSE:
+		fail = parseUInt(arg, &val);
+		if (fail == 1) {
 			printf("The number of slots must be in the range [%u, %u]\n",
 				0, UINT_MAX);
-			argp_usage(state); //no return
 		}
-		arguments->slotsMax = (unsigned int) val;
+		if (fail) {
+			argp_usage(state); // no return
+		}
+		arguments->slotsUse = val;
+		break;
+	case OPTION_SLOTSMAX:
+		fail = parseUInt(arg, &val);
+		if (fail == 1) {
+			printf("The number of slots must be in the range [%u, %u]\n",
+				0, UINT_MAX);
+		}
+		if (fail) {
+			argp_usage(state); // no return
+		}
+		arguments->slotsMax = val;
 		break;
 	case ARGP_KEY_ARG:
 		if (state->arg_num == 0) {
@@ -137,6 +166,7 @@ int fulfilArgs(struct arguments args)
 		job.argc = args.cmdCount;
 		job.argv = args.cmd;
 		job.priority = args.priority;
+		job.slots = args.slotsUse;
 
 		fail = messengerSendJob(server, job);
 		if (fail) {
