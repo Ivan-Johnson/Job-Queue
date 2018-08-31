@@ -13,6 +13,11 @@
 #include <stdbool.h>
 #include <sys/types.h>
 
+// All initialized jobs *MUST* satisfy these criteria:
+//
+// slots > 0
+//
+// argv != NULL
 struct job {
 	unsigned int slots;
 	bool priority;
@@ -20,6 +25,11 @@ struct job {
 	// index 0 is the command we run. Indicies [1, argc) are arguments
 	char **argv;
 };
+
+// The archeotype of an uninitialized job.
+//
+// JOB_ZEROS is to jobs as NULL is to pointers.
+const struct job JOB_ZEROS;
 
 //Given a *fully initialized job*, modifies buf such that it can be used by
 //unserializeJob can be used to reconstruct the given job. Returns the number of

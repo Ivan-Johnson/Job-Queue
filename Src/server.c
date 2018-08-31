@@ -67,19 +67,28 @@ int serverShutdown(bool killRunning)
 	//return !serverRunning
 }
 
-static int getJob(struct job *job)
+// If there are no jobs to run, then this function returns JOB_ZEROS, otherwise
+// it returns the job that should be run next.
+//
+// This function shall never fail.
+static struct job getJob()
 {
-	int fail = 0;
-	pthread_mutex_lock(&lock);
+	struct job job;
+	int fail;
+
+	fail = pthread_mutex_lock(&lock);
+	assert(!fail);
 	if (stackSize() > 0) {
-		*job = stackPop();
+		job = stackPop();
 	} else if (queueSize() > 0) {
-		*job = queueDequeue();
+		job = queueDequeue();
 	} else {
-		fail = 1;
+		job = JOB_ZEROS;
 	}
-	pthread_mutex_unlock(&lock);
-	return fail;
+	fail = pthread_mutex_unlock(&lock);
+	assert(!fail);
+
+	return job;
 }
 
 static int constructEnvval(size_t slotc, unsigned int *slotv, size_t buflen, char *buf)
@@ -183,8 +192,8 @@ void startJobs()
 		struct job job;
 		int fail;
 
-		fail = getJob(&job);
-		if (fail) { //there aren't any jobs
+		job = getJob();
+		if (jobEq(job, JOB_ZEROS)) {
 			return;
 		}
 
