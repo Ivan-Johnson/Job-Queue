@@ -23,7 +23,8 @@ struct arguments {
 	char *server;
 	char **cmd;
 	int cmdCount;
-	unsigned int numSlots;
+	unsigned int slotsUse;
+	unsigned int slotsMax;
 	bool priority;
 };
 

@@ -11,19 +11,20 @@
 
 #include <unity.h>
 
-char *args0[] = {"args0_0"};
-struct job job0 = {false, sizeof(args0) / sizeof(char*), args0};
+char *args0[] = {"args_0"};
+struct job job0 = {1, false, sizeof(args0) / sizeof(char*), args0};
 char *args1[] = {"args1_0", "args1_1", "args1_2"};
-struct job job1 = {false, sizeof(args1) / sizeof(char*), args1};
-char *args2[] = {"args2_0"};
-struct job job2 = {false, sizeof(args2) / sizeof(char*), args2};
+struct job job1 = {1, false, sizeof(args1) / sizeof(char*), args1};
+char *args2[] = {"args_0"};
+struct job job2 = {2, false, sizeof(args2) / sizeof(char*), args2};
 char *args3[] = {"args3_0", "args3_1"};
-struct job job3 = {false, sizeof(args3) / sizeof(char*), args3};
+struct job job3 = {1, false, sizeof(args3) / sizeof(char*), args3};
 char *args4[] = {"args4_0", "args4_1", "args4_2", "args4_3", "args4_4"};
-struct job job4 = {false, sizeof(args4) / sizeof(char*), args4};
+struct job job4 = {1, false, sizeof(args4) / sizeof(char*), args4};
 char *args5[] = {"args5_0", "args5_1", "args5_2"};
-struct job job5 = {false, sizeof(args5) / sizeof(char*), args5};
+struct job job5 = {3, false, sizeof(args5) / sizeof(char*), args5};
 
+// jobs array contains DISTINCT jobs.
 #define ARR_LEN 5
 struct job jobs[ARR_LEN];
 

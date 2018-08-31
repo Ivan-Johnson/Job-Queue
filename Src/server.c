@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,15 +27,18 @@
 #include "queue.h"
 #include "server.h"
 #include "stack.h"
+#include "slots.h"
 
 //TODO make these names consistent with SFILE_FIFO? or maybe not, because these
 //are not part of the public interface.
 #define LOG "log.txt"
 #define ERR "err.txt"
 
+#define SLOT_ENVVAR "CUDA_VISIBLE_DEVICES"
+#define MAX_ENVAL_LEN 10000
+
 static struct server *this = NULL;
 static pthread_mutex_t lock;
-static unsigned int numRunning;
 
 int serverAddJob(struct job job)
 {
@@ -64,31 +68,85 @@ int serverShutdown(bool killRunning)
 	//return !serverRunning
 }
 
-static int getJob(struct job *job)
+// If there are no jobs to run, then this function returns JOB_ZEROS, otherwise
+// it returns the job that should be run next.
+//
+// This function shall never fail.
+static struct job getJob()
 {
-	int fail = 0;
-	pthread_mutex_lock(&lock);
+	struct job job;
+	int fail;
+
+	fail = pthread_mutex_lock(&lock);
+	assert(!fail);
 	if (stackSize() > 0) {
-		*job = stackPop();
+		job = stackPop();
 	} else if (queueSize() > 0) {
-		*job = queueDequeue();
+		job = queueDequeue();
 	} else {
-		fail = 1;
+		job = JOB_ZEROS;
 	}
-	pthread_mutex_unlock(&lock);
-	return fail;
+	fail = pthread_mutex_unlock(&lock);
+	assert(!fail);
+
+	return job;
+}
+
+static int constructEnvval(size_t slotc, unsigned int *slotv, size_t buflen, char *buf)
+{
+	assert(slotc > 0);
+	size_t offset = 0;
+
+	for (size_t s = 0; s < slotc; s++) {
+		size_t space = buflen - offset;
+		char *fstring;
+		if (s == slotc - 1) {
+			fstring = "%u";
+		} else {
+			fstring = "%u,";
+		}
+		size_t chars = (size_t) snprintf(buf + offset, space,
+				fstring, slotv[s]);
+		if (chars == space) {
+			return 1;
+		}
+		offset += chars;
+	}
+	return 0;
 }
 
 static int runJob(struct job job)
 {
+	unsigned int numslot = job.slots;
+	assert(slotsAvailible() >= numslot);
+
+	int fail = slotsReserveSet(numslot, this->slotBuff);
+	if (fail) {
+		return 1;
+	}
+
+	char envval[MAX_ENVAL_LEN];
+	fail = constructEnvval(numslot, this->slotBuff, MAX_ENVAL_LEN, envval);
+	if (fail) {
+		slotsUnreserveSet(numslot, this->slotBuff);
+		return 1;
+	}
+	fail = setenv(SLOT_ENVVAR, envval, true);
+	if (fail) {
+		slotsUnreserveSet(numslot, this->slotBuff);
+		return 1;
+	}
+
 	int pid = fork();
 	if (pid == -1) {
+		slotsUnreserveSet(numslot, this->slotBuff);
 		return 1;
 	} else if (pid != 0) {
+		slotsRegisterSet(pid, numslot, this->slotBuff);
 		return 0;
 	}
 
-	execv(job.argv[0], job.argv); //no return unless it fails
+	execv(job.argv[0], job.argv); // no return unless it fails
 	fprintf(this->err,
 		"execv failed for \"%s\" command with \"%s\"\n",
 		job.argv[0], strerror(errno));
@@ -119,22 +177,31 @@ static void monitorChildren()
 		}
 
 		if (WIFSIGNALED(status)) {
-			numRunning--;
+			slotsRelease(pid);
+			// WTERMSIG(status)
 		} else if(WIFEXITED(status)) {
-			numRunning--;
-			// WEXITSTATUS(status);
+			slotsRelease(pid);
+			// WEXITSTATUS(status)
 		}
 	}
 }
 
-void startJobs()
+static void runJobs()
 {
-	while (numRunning < this->numSlots) {
-		struct job job;
-		int fail;
+	static struct job job;
+	int fail;
 
-		fail = getJob(&job);
-		if (fail) { //there aren't any jobs
+	while (1) {
+		if (jobEq(job, JOB_ZEROS)) {
+			job = getJob();
+			if (jobEq(job, JOB_ZEROS)) {
+				return;
+			}
+		}
+
+		assert(!jobEq(job, JOB_ZEROS));
+
+		if (slotsAvailible() < job.slots) {
 			return;
 		}
 
@@ -146,9 +213,9 @@ void startJobs()
 		} else {
 			fprintf(this->log, "Began executing \"%s\"\n",
 				job.argv[0]);
-			numRunning++;
 		}
 		freeJobClone(job);
+		job = JOB_ZEROS;
 	}
 }
 
@@ -156,19 +223,24 @@ __attribute__((noreturn)) void serverMain(void *srvr)
 {
 	this = srvr;
 	assert(this->numSlots > 0);
-	numRunning = 0;
 	if (pthread_mutex_init(&lock, NULL) != 0) {
 		fprintf(this->err, "Could not initialize mutex\n");
 		exit(1);
 	}
+	int fail = slotsMalloc(this->numSlots);
+	if (fail) {
+		fprintf(this->err, "Could not initialize slots module\n");
+		exit(1);
+	}
+
 	while (1) {
 		fflush(this->log);
 		sleep(3);
 		monitorChildren();
-		fprintf(this->log, "Queue: %zd; Stack: %zd; Running: %d\n",
-			queueSize(), stackSize(), numRunning);
+		fprintf(this->log, "Queue: %zd; Stack: %zd; free slots: %u\n",
+			queueSize(), stackSize(), slotsAvailible());
 
-		startJobs();
+		runJobs();
 	}
 }
 
@@ -207,6 +279,7 @@ static struct server serverInitialize(void)
 	s.server = -1;
 	s.fifo = -1;
 	s.numSlots = 0;
+	s.slotBuff = NULL;
 	return s;
 }
 
@@ -223,6 +296,9 @@ void serverClose(struct server s)
 	}
 	if (s.server != -1) {
 		close(s.server);
+	}
+	if (s.slotBuff) {
+		free(s.slotBuff);
 	}
 }
 
@@ -253,6 +329,11 @@ int openServer(int dirFD, struct server *s, unsigned int numSlots)
 	}
 	s->err = fdopen(fd, "a");
 	if (!s->err) {
+		serverClose(*s);
+		return 1;
+	}
+	s->slotBuff = malloc(sizeof(unsigned int) * s->numSlots);
+	if (!s->slotBuff) {
 		serverClose(*s);
 		return 1;
 	}
