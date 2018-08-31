@@ -96,7 +96,7 @@ void freeUnserializedJob(struct job job)
 	free(job.argv);
 }
 
-// Returns 0 if the jobs are equivalent, nonzero otherwise
+// Returns true if the jobs are equivalent, otherwise return false
 bool jobEq(struct job job1, struct job job2)
 {
 	if (job1.priority != job2.priority) {
