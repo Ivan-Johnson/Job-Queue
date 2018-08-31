@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -116,37 +117,36 @@ static int constructEnvval(size_t slotc, unsigned int *slotv, size_t buflen, cha
 
 static int runJob(struct job job)
 {
-	unsigned int slots[1];
-	unsigned int numslot = 1;
+	unsigned int numslot = job.slots;
 	assert(slotsAvailible() >= numslot);
 
-	int fail = slotsReserveSet(numslot, slots);
+	int fail = slotsReserveSet(numslot, this->slotBuff);
 	if (fail) {
 		return 1;
 	}
 
 	char envval[MAX_ENVAL_LEN];
-	fail = constructEnvval(numslot, slots, MAX_ENVAL_LEN, envval);
+	fail = constructEnvval(numslot, this->slotBuff, MAX_ENVAL_LEN, envval);
 	if (fail) {
-		slotsUnreserveSet(numslot, slots);
+		slotsUnreserveSet(numslot, this->slotBuff);
 		return 1;
 	}
 	fail = setenv(SLOT_ENVVAR, envval, true);
 	if (fail) {
-		slotsUnreserveSet(numslot, slots);
+		slotsUnreserveSet(numslot, this->slotBuff);
 		return 1;
 	}
 
 	int pid = fork();
 	if (pid == -1) {
-		slotsUnreserveSet(numslot, slots);
+		slotsUnreserveSet(numslot, this->slotBuff);
 		return 1;
 	} else if (pid != 0) {
-		slotsRegisterSet(pid, numslot, slots);
+		slotsRegisterSet(pid, numslot, this->slotBuff);
 		return 0;
 	}
 
-	execv(job.argv[0], job.argv); //no return unless it fails
+	execv(job.argv[0], job.argv); // no return unless it fails
 	fprintf(this->err,
 		"execv failed for \"%s\" command with \"%s\"\n",
 		job.argv[0], strerror(errno));
@@ -186,14 +186,22 @@ static void monitorChildren()
 	}
 }
 
-void startJobs()
+static void runJobs()
 {
-	while (slotsAvailible() > 0) {
-		struct job job;
-		int fail;
+	static struct job job;
+	int fail;
 
-		job = getJob();
+	while (1) {
 		if (jobEq(job, JOB_ZEROS)) {
+			job = getJob();
+			if (jobEq(job, JOB_ZEROS)) {
+				return;
+			}
+		}
+
+		assert(!jobEq(job, JOB_ZEROS));
+
+		if (slotsAvailible() < job.slots) {
 			return;
 		}
 
@@ -207,6 +215,7 @@ void startJobs()
 				job.argv[0]);
 		}
 		freeJobClone(job);
+		job = JOB_ZEROS;
 	}
 }
 
@@ -223,6 +232,7 @@ __attribute__((noreturn)) void serverMain(void *srvr)
 		fprintf(this->err, "Could not initialize slots module\n");
 		exit(1);
 	}
+
 	while (1) {
 		fflush(this->log);
 		sleep(3);
@@ -230,7 +240,7 @@ __attribute__((noreturn)) void serverMain(void *srvr)
 		fprintf(this->log, "Queue: %zd; Stack: %zd; free slots: %u\n",
 			queueSize(), stackSize(), slotsAvailible());
 
-		startJobs();
+		runJobs();
 	}
 }
 
@@ -269,6 +279,7 @@ static struct server serverInitialize(void)
 	s.server = -1;
 	s.fifo = -1;
 	s.numSlots = 0;
+	s.slotBuff = NULL;
 	return s;
 }
 
@@ -285,6 +296,9 @@ void serverClose(struct server s)
 	}
 	if (s.server != -1) {
 		close(s.server);
+	}
+	if (s.slotBuff) {
+		free(s.slotBuff);
 	}
 }
 
@@ -315,6 +329,11 @@ int openServer(int dirFD, struct server *s, unsigned int numSlots)
 	}
 	s->err = fdopen(fd, "a");
 	if (!s->err) {
+		serverClose(*s);
+		return 1;
+	}
+	s->slotBuff = malloc(sizeof(unsigned int) * s->numSlots);
+	if (!s->slotBuff) {
 		serverClose(*s);
 		return 1;
 	}

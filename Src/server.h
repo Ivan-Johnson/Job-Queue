@@ -28,6 +28,10 @@ struct server {
 	FILE *err;  // A file to use in place of the server's stderr
 
 	unsigned int numSlots;
+
+	// buffer for the EXCLUSIVE use of the server thread
+	// guaranteed have a length of at least numSlots
+	unsigned int *slotBuff;
 };
 
 void serverMain(void *srvr) __attribute__((noreturn));
