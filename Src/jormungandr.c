@@ -46,13 +46,13 @@ static int parseUInt(char *string, unsigned int *out)
 {
 	char *end;
 	long val = strtol(string, &end, 10); //base 10
+	*out = (unsigned int) val;
 	if (end[0] != '\0') {
 		return 2;
 	}
 	if (val < 0 || val > UINT_MAX) {
 		return 1;
 	}
-	*out = (unsigned int) val;
 	return 0;
 }
 
