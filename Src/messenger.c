@@ -72,36 +72,47 @@ static int processJob(struct job job)
 static void processFIFO(struct server server, int fifo)
 {
 	char buf[PIPE_BUF];
-	ssize_t s = read(fifo, buf, PIPE_BUF);
-	if (s <= 0) {
-		return;
-	}
-	if (buf[s] != '\0') {
-		fprintf(server.err,
-			"Reader received an invalid string\n");
-		fflush(server.err);
-		serverShutdown(false);
-		pthread_exit(NULL);
-	}
-	struct job job;
-	int fail = unserializeJob(&job, buf, (size_t) s);
-	if (fail) {
-		fprintf(server.err, "Unserialization failed\n");
-		fflush(server.err);
-		return;
-	}
+	// number of bytes in buf that are currently in use
+	size_t bufused = 0;
+	while (1) {
+		ssize_t s = read(fifo, buf + bufused, PIPE_BUF - bufused);
+		if (s < 0) {
+			if (errno == EINTR) {
+				return;
+			}
+			s = 0;
+		}
+		bufused += (size_t) s;
+		if (bufused <= 0) {
+			return;
+		}
+		struct job job;
+		char *next;
+		int fail = unserializeJob(&job, buf, bufused, &next);
+		if (fail) {
+			fprintf(server.err, "Unserialization failed\n");
+			fflush(server.err);
+			return;
+		}
 
-	fail = processJob(job);
-	if (fail) {
-		fprintf(server.err, "Error when scheduling job: %s\n",
-			job.argv[0]);
-		fflush(server.err);
-	} else {
-		fprintf(server.log, "Scheduled job: %s\n", job.argv[0]);
-		fflush(server.log);
-	}
+		fail = processJob(job);
+		if (fail) {
+			fprintf(server.err, "Error when scheduling job: %s\n",
+				job.argv[0]);
+			fflush(server.err);
+		} else {
+			fprintf(server.log, "Scheduled job: %s\n", job.argv[0]);
+			fflush(server.log);
+		}
+		freeUnserializedJob(job);
 
-	freeUnserializedJob(job);
+		// (buf) (next) (buf+bufused)
+		//
+		// copies the values that are currently in the range
+		// [next, buf+bufunused] to the front of buf.
+		bufused -= (size_t) (next - buf);
+		memmove(buf, next, bufused);
+	}
 }
 
 __attribute__((noreturn)) static void* messengerReader(void *srvr)

@@ -71,7 +71,7 @@ ssize_t serializeJob(struct job job, char *buf, size_t bufLen)
 }
 
 int unserializeJob(struct job *restrict job, char *restrict buf,
-		size_t capfree)
+		size_t capfree, char **bufEnd)
 {
 	size_t sizetmp;
 
@@ -99,6 +99,10 @@ int unserializeJob(struct job *restrict job, char *restrict buf,
 		capfree -= sizetmp;
 		job->argv[x] = buf;
 		buf += sizetmp + 1;
+	}
+
+	if (bufEnd != NULL) {
+		*bufEnd = buf;
 	}
 
 	return 0;

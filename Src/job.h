@@ -51,10 +51,14 @@ ssize_t serializeJob(struct job job, char *buf, size_t bufLen)
 //
 //Returns 0 on success, nonzero on fail
 //
+//If bufEnd != NULL and unserializeJob successfuly completes, then (*bufEnd)
+//will point at the first byte in the buffer that is not part of the serialized
+//job.
+//
 //job->argv[job->argc] == NULL. TODO: prior to release, struct job's argc will
 //be removed in favor of such NULL terminated argv's.
 int unserializeJob(struct job *restrict job, char *restrict buf,
-		size_t serialLen) __attribute__((nonnull(1, 2)));
+		size_t serialLen, char **bufEnd) __attribute__((nonnull(1, 2)));
 
 void freeUnserializedJob(struct job);
 

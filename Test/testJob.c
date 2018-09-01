@@ -78,10 +78,12 @@ void testIdentity()
 		struct job jIn = jobs[x];
 		struct job jOut;
 
-		ssize_t tmp = serializeJob(jIn, buf, bufLen);
-		TEST_ASSERT_TRUE(tmp >= 0);
-		tmp = unserializeJob(&jOut, buf, (size_t) tmp);
-		TEST_ASSERT_TRUE(tmp == 0);
+		ssize_t used = serializeJob(jIn, buf, bufLen);
+		TEST_ASSERT_TRUE(used >= 0);
+		char *end;
+		int fail = unserializeJob(&jOut, buf, bufLen, &end);
+		TEST_ASSERT_FALSE(fail);
+		TEST_ASSERT_TRUE(used == end - buf);
 		TEST_ASSERT_TRUE(jobEq(jIn, jOut));
 
 		freeUnserializedJob(jOut);
