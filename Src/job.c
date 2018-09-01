@@ -92,7 +92,10 @@ int unserializeJob(struct job *restrict job, char *restrict buf,
 
 	for (int x = 0; x < job->argc; x++) {
 		sizetmp = strnlen(buf, capfree);
-		assert(sizetmp < capfree);
+		if (sizetmp == capfree) {
+			free(job->argv);
+			return 1;
+		}
 		capfree -= sizetmp;
 		job->argv[x] = buf;
 		buf += sizetmp + 1;
