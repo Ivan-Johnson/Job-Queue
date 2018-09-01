@@ -71,14 +71,13 @@ ssize_t serializeJob(struct job job, char *buf, size_t bufLen)
 }
 
 int unserializeJob(struct job *restrict job, char *restrict buf,
-		size_t serialLen)
+		size_t capfree)
 {
-	size_t remLen = serialLen; //remaining length
-	size_t len;
+	size_t sizetmp;
 
-	len = sizeof(unsigned int) + sizeof(bool) + sizeof(int);
-	assert(len <= remLen);
-	remLen -= len;
+	sizetmp = sizeof(unsigned int) + sizeof(bool) + sizeof(int);
+	assert(sizetmp <= capfree);
+	capfree -= sizetmp;
 	memcpy(&job->slots, buf, sizeof(unsigned int));
 	buf += sizeof(unsigned int);
 	memcpy(&job->priority, buf, sizeof(bool));
@@ -92,11 +91,11 @@ int unserializeJob(struct job *restrict job, char *restrict buf,
 	}
 
 	for (int x = 0; x < job->argc; x++) {
-		len = strnlen(buf, remLen);
-		assert(len < remLen);
-		remLen -= len;
+		sizetmp = strnlen(buf, capfree);
+		assert(sizetmp < capfree);
+		capfree -= sizetmp;
 		job->argv[x] = buf;
-		buf += len + 1;
+		buf += sizetmp + 1;
 	}
 
 	return 0;
