@@ -58,6 +58,52 @@ int messengerSendJob(int serverdir, struct job job)
 	return 0;
 }
 
+static int processJob(struct job job)
+{
+	struct job jobTmp = job;
+	int fail = cloneJob(&job, jobTmp);
+	if (fail) {
+		return 1;
+	}
+
+	return serverAddJob(job);
+}
+
+static void processFIFO(struct server server, int fifo)
+{
+	char buf[PIPE_BUF];
+	ssize_t s = read(fifo, buf, PIPE_BUF);
+	if (s <= 0) {
+		return;
+	}
+	if (buf[s] != '\0') {
+		fprintf(server.err,
+			"Reader received an invalid string\n");
+		fflush(server.err);
+		serverShutdown(false);
+		pthread_exit(NULL);
+	}
+	struct job job;
+	int fail = unserializeJob(&job, buf, (size_t) s);
+	if (fail) {
+		fprintf(server.err, "Unserialization failed\n");
+		fflush(server.err);
+		return;
+	}
+
+	fail = processJob(job);
+	if (fail) {
+		fprintf(server.err, "Error when scheduling job: %s\n",
+			job.argv[0]);
+		fflush(server.err);
+	} else {
+		fprintf(server.log, "Scheduled job: %s\n", job.argv[0]);
+		fflush(server.log);
+	}
+
+	freeUnserializedJob(job);
+}
+
 __attribute__((noreturn)) static void* messengerReader(void *srvr)
 {
 	struct server server = *((struct server *) srvr);
@@ -79,44 +125,7 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 
 	while (1) {
 		sleep(1); //TODO use pselect or something?
-		char buf[PIPE_BUF];
-		ssize_t s = read(fifo_read, buf, PIPE_BUF);
-		if (s <= 0) {
-			continue;
-		}
-		if (buf[s] != '\0') {
-			fprintf(server.err,
-				"Reader received an invalid string\n");
-			fflush(server.err);
-			serverShutdown(false);
-			pthread_exit(NULL);
-		}
-		struct job job;
-		int fail = unserializeJob(&job, buf, (size_t) s);
-		if (fail) {
-			fprintf(server.err, "Unserialization failed\n");
-			fflush(server.err);
-			continue;
-		}
-
-		struct job jobTmp = job;
-		fail = cloneJob(&job, jobTmp);
-		if (fail) {
-			fprintf(server.err, "Failed to clone job\n");
-			fflush(server.err);
-			continue;
-		}
-		freeUnserializedJob(jobTmp);
-
-		fail = serverAddJob(job);
-		if (fail) {
-			fprintf(server.err, "Error when scheduling job: %s\n",
-				job.argv[0]);
-			fflush(server.err);
-		} else {
-			fprintf(server.log, "Scheduled job: %s\n", job.argv[0]);
-			fflush(server.log);
-		}
+		processFIFO(server, fifo_read);
 	}
 }
 
