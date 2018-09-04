@@ -47,15 +47,20 @@ ssize_t serializeJob(struct job job, char *buf, size_t bufLen)
 	memcpy(buf, &job.priority, len);
 	buf += len;
 
+	int argc = 0;
+	while (job.argv[argc] != NULL) {
+		argc++;
+	}
+
 	len = sizeof(int);
 	if (len > space) {
 		return -1;
 	}
 	space -= len;
-	memcpy(buf, &job.argc, len);
+	memcpy(buf, &argc, len);
 	buf += len;
 
-	for (int x = 0; x < job.argc; x++) {
+	for (int x = 0; x < argc; x++) {
 		len = strlen(job.argv[x]) + 1;
 		if (len > space) {
 			return -1;
@@ -74,6 +79,7 @@ int unserializeJob(struct job *restrict job, char *restrict buf,
 		size_t capfree, char **bufEnd)
 {
 	size_t sizetmp;
+	int argc;
 
 	sizetmp = sizeof(unsigned int) + sizeof(bool) + sizeof(int);
 	assert(sizetmp <= capfree);
@@ -82,15 +88,15 @@ int unserializeJob(struct job *restrict job, char *restrict buf,
 	buf += sizeof(unsigned int);
 	memcpy(&job->priority, buf, sizeof(bool));
 	buf += sizeof(bool);
-	memcpy(&job->argc, buf, sizeof(int));
+	memcpy(&argc, buf, sizeof(int));
 	buf += sizeof(int);
 
-	job->argv = malloc(sizeof(char*) * ((unsigned long) job->argc));
+	job->argv = malloc(sizeof(char*) * ((unsigned long) argc + 1));
 	if (!job->argv) {
 		return 1;
 	}
 
-	for (int x = 0; x < job->argc; x++) {
+	for (int x = 0; x < argc; x++) {
 		sizetmp = strnlen(buf, capfree);
 		if (sizetmp == capfree) {
 			free(job->argv);
@@ -122,34 +128,40 @@ bool jobEq(struct job job1, struct job job2)
 	if (job1.priority != job2.priority) {
 		return false;
 	}
-	if (job1.argc != job2.argc) {
+
+	// compare argv's
+	if (job1.argv == job2.argv) {
+		return true;
+	} else if (job1.argv == NULL || job2.argv == NULL) {
 		return false;
 	}
-	if (job1.argv != job2.argv) {
-		if (job1.argv == NULL || job2.argv == NULL) {
+	int i = 0;
+	while (job1.argv[i] != NULL && job2.argv[i] != NULL) {
+		if (job1.argv[i] == job2.argv[i]) {
+			continue;
+		}
+		if (strcmp(job1.argv[i], job2.argv[i])) {
 			return false;
 		}
-		for (int x = 0; x < job1.argc; x++) {
-			if (strcmp(job1.argv[x], job2.argv[x])) {
-				return false;
-			}
-		}
+		i++;
 	}
-	return true;
+	return job1.argv[i] == job2.argv[i];
 }
 
 int cloneJob(struct job *dest, struct job src)
 {
 	dest->slots = src.slots;
 	dest->priority = src.priority;
-	dest->argc = src.argc;
-	assert(src.argc >= 0);
-	dest->argv = malloc(sizeof(char*) * ((size_t)src.argc + 1));
+	int argc = 0;
+	while (src.argv[argc] != NULL) {
+		argc++;
+	}
+	dest->argv = malloc(sizeof(char*) * ((size_t) argc + 1));
 	if (!dest->argv) {
 		return 1;
 	}
 	int x;
-	for(x = 0; x < src.argc; x++) {
+	for(x = 0; x < argc; x++) {
 		size_t len = strlen(src.argv[x]) + 1;
 		dest->argv[x] = malloc(sizeof(char) * len);
 		if (!dest->argv[x]) {
@@ -157,7 +169,7 @@ int cloneJob(struct job *dest, struct job src)
 		}
 		memcpy(dest->argv[x], src.argv[x], len);
 	}
-	dest->argv[src.argc] = NULL;
+	dest->argv[argc] = NULL;
 	return 0;
 fail:
 	for(x--; x >= 0; x--) {
@@ -169,9 +181,11 @@ fail:
 
 void freeJobClone(struct job job)
 {
-	assert(job.argv && job.argc >= 0);
-	for(int x = 0; x < job.argc; x++) {
+	assert(job.argv);
+	int x = 0;
+	while (job.argv[x] != NULL) {
 		free(job.argv[x]);
+		x++;
 	}
 	free(job.argv);
 }

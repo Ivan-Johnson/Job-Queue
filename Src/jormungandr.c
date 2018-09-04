@@ -112,11 +112,19 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 			return ARGP_ERR_UNKNOWN;
 		}
 		break;
-	case ARGP_KEY_ARGS:
-		arguments->cmd      = state->argv + state->next;
-		arguments->cmdCount = state->argc - state->next;
+	case ARGP_KEY_ARGS: {
+		unsigned int argc = (unsigned int) (state->argc - state->next);
+		arguments->cmd = malloc(sizeof(char*) * (argc + 1));
+		assert(arguments->cmd);
+
+		char **argv = state->argv + state->next;
+		for (unsigned int i = 0; i < argc; i++) {
+			arguments->cmd[i] = argv[i];
+		}
+		arguments->cmd[argc] = NULL;
+
 		break;
-	case ARGP_KEY_END:
+	} case ARGP_KEY_END:
 		switch (arguments->task) {
 		case task_schedule:
 			if (state->arg_num <= 2) {
@@ -163,7 +171,6 @@ int fulfilArgs(struct arguments args)
 	case task_launch:
 		return messengerLaunchServer(server, args.slotsMax);
 	case task_schedule:
-		job.argc = args.cmdCount;
 		job.argv = args.cmd;
 		job.priority = args.priority;
 		job.slots = args.slotsUse;

@@ -21,8 +21,9 @@
 struct job {
 	unsigned int slots;
 	bool priority;
-	int argc;
-	// index 0 is the command we run. Indicies [1, argc) are arguments
+	// index 0 is the path to the executable
+	// The last value is NULL.
+	// Intermediate values are arguments
 	char **argv;
 };
 

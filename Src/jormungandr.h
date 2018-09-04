@@ -21,8 +21,8 @@ enum task {
 struct arguments {
 	enum task task;
 	char *server;
+	// cmd is NULL terminated.
 	char **cmd;
-	int cmdCount;
 	unsigned int slotsUse;
 	unsigned int slotsMax;
 	bool priority;
