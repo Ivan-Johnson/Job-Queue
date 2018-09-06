@@ -168,16 +168,15 @@ static void monitorChildren()
 		pid_t pid = waitpid(-1, &status, WNOHANG);
 		if (pid == -1) {
 			if (errno == ECHILD) {
-				// all children have been handled
-				return;
+				break;
 			} else {
 				assert(errno == EINTR);
 				continue;
 			}
 		}
 
-		if (pid == 0) { // no child has a status update
-			return;
+		if (pid == 0) {
+			break;
 		}
 
 		if (WIFSIGNALED(status)) {
