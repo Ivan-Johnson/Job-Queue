@@ -8,5 +8,4 @@
 
 killall jormungandr > /dev/null 2>&1
 rm -rf /tmp/Server
-make
-./Bin/debug/Nontest/jormungandr launch /tmp/Server -s 3
+make && ./Bin/debug/Nontest/jormungandr launch /tmp/Server -s 4
