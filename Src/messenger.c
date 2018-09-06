@@ -44,7 +44,6 @@ int messengerSendJob(int serverdir, struct job job)
 		return 1;
 	}
 	assert(len >= 0);
-	puts("Sending job");
 	ssize_t s = (ssize_t) write(fifo, buf, (size_t) len);
 	if (s == -1) {
 		printf("Failed to send: %s\n", strerror(errno));
