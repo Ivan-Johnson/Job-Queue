@@ -42,13 +42,16 @@ static pthread_mutex_t lock;
 
 int serverAddJob(struct job job)
 {
-	pthread_mutex_lock(&lock);
+	int fail;
+	fail = pthread_mutex_lock(&lock);
+	assert(!fail);
 	if (job.priority) {
 		stackPush(job);
 	} else {
 		queueEnqueue(job);
 	}
-	pthread_mutex_unlock(&lock);
+	fail = pthread_mutex_unlock(&lock);
+	assert(!fail);
 	//TODO wake server thread
 	return 0;
 }
@@ -223,7 +226,16 @@ __attribute__((noreturn)) void serverMain(void *srvr)
 {
 	this = srvr;
 	assert(this->numSlots > 0);
-	if (pthread_mutex_init(&lock, NULL) != 0) {
+	pthread_mutexattr_t attr;
+	if (pthread_mutexattr_init(&attr)) {
+		fprintf(this->err, "Could not initialize mutexattr\n");
+		exit(1);
+	}
+	if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK)) {
+		fprintf(this->err, "Could not set mutexattr to errorcheck\n");
+		exit(1);
+	}
+	if (pthread_mutex_init(&lock, &attr)) {
 		fprintf(this->err, "Could not initialize mutex\n");
 		exit(1);
 	}
