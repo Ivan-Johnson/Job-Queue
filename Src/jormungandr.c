@@ -189,10 +189,17 @@ int fulfilArgs(struct arguments args)
 	}
 }
 
+void freeArgs(struct arguments args)
+{
+	free(args.cmd);
+}
+
 #ifndef TEST
 int main(int argc, char **argv)
 {
 	struct arguments args = parseArgs(argc, argv);
-	return fulfilArgs(args);
+	int fail = fulfilArgs(args);
+	freeArgs(args);
+	return fail;
 }
 #endif

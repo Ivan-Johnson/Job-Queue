@@ -30,5 +30,6 @@ struct arguments {
 
 struct arguments parseArgs(int argc, char **argv);
 int fulfilArgs(struct arguments args);
+void freeArgs(struct arguments args);
 
 #endif
