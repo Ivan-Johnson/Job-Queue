@@ -106,6 +106,7 @@ int unserializeJob(struct job *restrict job, char *restrict buf,
 		job->argv[x] = buf;
 		buf += sizetmp + 1;
 	}
+	job->argv[argc] = NULL;
 
 	if (bufEnd != NULL) {
 		*bufEnd = buf;
