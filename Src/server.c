@@ -75,13 +75,16 @@ int serverShutdown(bool killRunning)
 // it returns the job that should be run next.
 //
 // This function shall never fail.
+//
+// The current thread MUST already have the mutex lock.
 static struct job getJob()
 {
 	struct job job;
 	int fail;
 
 	fail = pthread_mutex_lock(&lock);
-	assert(!fail);
+	assert(fail == EDEADLK);
+
 	if (stackSize() > 0) {
 		job = stackPop();
 	} else if (queueSize() > 0) {
@@ -89,8 +92,6 @@ static struct job getJob()
 	} else {
 		job = JOB_ZEROS;
 	}
-	fail = pthread_mutex_unlock(&lock);
-	assert(!fail);
 
 	return job;
 }
@@ -191,21 +192,20 @@ static void monitorChildren()
 
 static void runJobs()
 {
-	static struct job job;
 	int fail;
 
+	fail = pthread_mutex_lock(&lock);
+	assert(!fail);
+
 	while (1) {
+		struct job job = getJob();
 		if (jobEq(job, JOB_ZEROS)) {
-			job = getJob();
-			if (jobEq(job, JOB_ZEROS)) {
-				return;
-			}
+			break;
 		}
 
-		assert(!jobEq(job, JOB_ZEROS));
-
 		if (slotsAvailible() < job.slots) {
-			return;
+			stackPush(job);
+			break;
 		}
 
 		fail = runJob(job);
@@ -218,8 +218,10 @@ static void runJobs()
 				job.argv[0]);
 		}
 		freeJobClone(job);
-		job = JOB_ZEROS;
 	}
+
+	fail = pthread_mutex_unlock(&lock);
+	assert(!fail);
 }
 
 __attribute__((noreturn)) void serverMain(void *srvr)
