@@ -158,8 +158,8 @@ int messengerLaunchServer(int fd, unsigned int numSlots)
 		serverClose(server);
 		return 1;
 	} else if (pid != 0) {
-		// Origional process immediately returns successfully
 		puts("Successfully forked a server");
+		serverClose(server);
 		return 0;
 	}
 
