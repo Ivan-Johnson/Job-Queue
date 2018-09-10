@@ -24,7 +24,7 @@
 #define OPTION_SLOTSUSE 'c'
 
 const char *argp_program_version =
-	"Jörmungandr v0.2.0-alpha\n"
+	"Jörmungandr v0.3.0-alpha\n"
 	"Copyright(C) 2018, Ivan Tobias Johnson\n"
 	"License GPLv2.0: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html\n"
 	"This software comes with no warranty, to the extent permitted by applicable law";
