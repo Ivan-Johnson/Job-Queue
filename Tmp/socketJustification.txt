@@ -1,0 +1,15 @@
+/*
+ * Tmp/socketJustification.txt
+ *
+ * Copyright(C) 2018, Ivan Tobias Johnson
+ *
+ * LICENSE: GPL 2.0
+ */
+
+
+* if one client sends bad data, we can still get valid data from others (with
+  FIFO's, we'd have no way of knowing where the bad data ends and the good
+  resumes)
+
+* two-way connection, so that clients can be given an ID of the job they
+  started, or query about what jobs are running
