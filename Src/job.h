@@ -39,7 +39,7 @@ const struct job JOB_ZEROS;
 //Will only fail if the given job cannot fit in the specified buffer. In this
 //case, returns -1.
 ssize_t serializeJob(struct job job, char *buf, size_t bufLen)
-	__attribute__((nonnull(2)));
+    __attribute__((nonnull(2)));
 
 //Memory will be malloc'ed to store argv. To free this memory, call
 //freeUnserializedJob.
@@ -59,7 +59,8 @@ ssize_t serializeJob(struct job job, char *buf, size_t bufLen)
 //job->argv[job->argc] == NULL. TODO: prior to release, struct job's argc will
 //be removed in favor of such NULL terminated argv's.
 int unserializeJob(struct job *restrict job, char *restrict buf,
-		size_t serialLen, char **bufEnd) __attribute__((nonnull(1, 2)));
+		   size_t serialLen, char **bufEnd)
+    __attribute__((nonnull(1, 2)));
 
 void freeUnserializedJob(struct job);
 

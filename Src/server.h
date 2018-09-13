@@ -22,10 +22,10 @@
 #define SERVER_DIR_PERMS 0700
 
 struct server {
-	int server; // fd of the main server directory
-	int fifo;   // fd of the fifo file used to receive requests (RD_ONLY)
-	FILE *log;  // A file to use in place of the server's stdout
-	FILE *err;  // A file to use in place of the server's stderr
+	int server;		// fd of the main server directory
+	int fifo;		// fd of the fifo file used to receive requests (RD_ONLY)
+	FILE *log;		// A file to use in place of the server's stdout
+	FILE *err;		// A file to use in place of the server's stderr
 
 	unsigned int numSlots;
 

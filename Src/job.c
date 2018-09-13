@@ -24,7 +24,7 @@
 //sizeof(bool) bytes: priority bool
 //sizeof(int) bytes: argc int
 //sizeof(char) * (strlen(argv[x]) + 1) bytes: (repeated argc times)
-//		the argv[x] string, including the terminating NULL byte
+//              the argv[x] string, including the terminating NULL byte
 
 ssize_t serializeJob(struct job job, char *buf, size_t bufLen)
 {
@@ -76,7 +76,7 @@ ssize_t serializeJob(struct job job, char *buf, size_t bufLen)
 }
 
 int unserializeJob(struct job *restrict job, char *restrict buf,
-		size_t capfree, char **bufEnd)
+		   size_t capfree, char **bufEnd)
 {
 	size_t sizetmp;
 	int argc;
@@ -91,7 +91,7 @@ int unserializeJob(struct job *restrict job, char *restrict buf,
 	memcpy(&argc, buf, sizeof(int));
 	buf += sizeof(int);
 
-	job->argv = malloc(sizeof(char*) * ((unsigned long) argc + 1));
+	job->argv = malloc(sizeof(char *) * ((unsigned long)argc + 1));
 	if (!job->argv) {
 		return 1;
 	}
@@ -129,7 +129,6 @@ bool jobEq(struct job job1, struct job job2)
 	if (job1.priority != job2.priority) {
 		return false;
 	}
-
 	// compare argv's
 	if (job1.argv == job2.argv) {
 		return true;
@@ -157,12 +156,12 @@ int cloneJob(struct job *dest, struct job src)
 	while (src.argv[argc] != NULL) {
 		argc++;
 	}
-	dest->argv = malloc(sizeof(char*) * ((size_t) argc + 1));
+	dest->argv = malloc(sizeof(char *) * ((size_t)argc + 1));
 	if (!dest->argv) {
 		return 1;
 	}
 	int x;
-	for(x = 0; x < argc; x++) {
+	for (x = 0; x < argc; x++) {
 		size_t len = strlen(src.argv[x]) + 1;
 		dest->argv[x] = malloc(sizeof(char) * len);
 		if (!dest->argv[x]) {
@@ -173,7 +172,7 @@ int cloneJob(struct job *dest, struct job src)
 	dest->argv[argc] = NULL;
 	return 0;
 fail:
-	for(x--; x >= 0; x--) {
+	for (x--; x >= 0; x--) {
 		free(dest->argv[x]);
 	}
 	free(dest->argv);

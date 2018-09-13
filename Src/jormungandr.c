@@ -24,20 +24,23 @@
 #define OPTION_SLOTSUSE 'c'
 
 const char *argp_program_version =
-	"Jörmungandr v0.3.0-alpha\n"
-	"Copyright(C) 2018, Ivan Tobias Johnson\n"
-	"License GPLv2.0: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html\n"
-	"This software comes with no warranty, to the extent permitted by applicable law";
+    "Jörmungandr v0.3.0-alpha\n"
+    "Copyright(C) 2018, Ivan Tobias Johnson\n"
+    "License GPLv2.0: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html\n"
+    "This software comes with no warranty, to the extent permitted by applicable law";
 const char *argp_program_bug_address = "<git@IvanJohnson.net>";
 static const char doc[] = "Jörmungandr -- a tool running a queue of jobs";
 static const char args_doc[] =
-	"launch <serverdir> [-s slots] [--slotsmax=slots]\n"
-	"schedule <serverdir> [-c slots] [--slotsuse=slots] [-p] [--priority] -- <cmd> [args...]";
+    "launch <serverdir> [-s slots] [--slotsmax=slots]\n"
+    "schedule <serverdir> [-c slots] [--slotsuse=slots] [-p] [--priority] -- <cmd> [args...]";
 static struct argp_option options[] = {
-	{"slotsmax", OPTION_SLOTSMAX, "slots", OPTION_NO_USAGE, "Specifies the number of slots to start servers with", 0},
-	{"priority", OPTION_PRIORITY, 0,       OPTION_NO_USAGE, "Put the given command at the front of the queue",     0},
-	{"slotsuse", OPTION_SLOTSUSE, "slots", OPTION_NO_USAGE, "How many slots the given command occupies",           0},
-	{0, 0, 0, 0, 0, 0}
+	{ "slotsmax", OPTION_SLOTSMAX, "slots", OPTION_NO_USAGE,
+	 "Specifies the number of slots to start servers with", 0 },
+	{ "priority", OPTION_PRIORITY, 0, OPTION_NO_USAGE,
+	 "Put the given command at the front of the queue", 0 },
+	{ "slotsuse", OPTION_SLOTSUSE, "slots", OPTION_NO_USAGE,
+	 "How many slots the given command occupies", 0 },
+	{ 0, 0, 0, 0, 0, 0 }
 };
 
 // Returns 0 on success, 1 on out of bounds, and other values for other
@@ -45,8 +48,8 @@ static struct argp_option options[] = {
 static int parseUInt(char *string, unsigned int *out)
 {
 	char *end;
-	long val = strtol(string, &end, 10); //base 10
-	*out = (unsigned int) val;
+	long val = strtol(string, &end, 10);	//base 10
+	*out = (unsigned int)val;
 	if (end[0] != '\0') {
 		return 2;
 	}
@@ -78,22 +81,24 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 	case OPTION_SLOTSUSE:
 		fail = parseUInt(arg, &val);
 		if (fail == 1) {
-			printf("The number of slots must be in the range [%u, %u]\n",
-				0, UINT_MAX);
+			printf
+			    ("The number of slots must be in the range [%u, %u]\n",
+			     0, UINT_MAX);
 		}
 		if (fail) {
-			argp_usage(state); // no return
+			argp_usage(state);	// no return
 		}
 		arguments->slotsUse = val;
 		break;
 	case OPTION_SLOTSMAX:
 		fail = parseUInt(arg, &val);
 		if (fail == 1) {
-			printf("The number of slots must be in the range [%u, %u]\n",
-				0, UINT_MAX);
+			printf
+			    ("The number of slots must be in the range [%u, %u]\n",
+			     0, UINT_MAX);
 		}
 		if (fail) {
-			argp_usage(state); // no return
+			argp_usage(state);	// no return
 		}
 		arguments->slotsMax = val;
 		break;
@@ -112,9 +117,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 			return ARGP_ERR_UNKNOWN;
 		}
 		break;
+		// *INDENT-OFF*
 	case ARGP_KEY_ARGS: {
-		unsigned int argc = (unsigned int) (state->argc - state->next);
-		arguments->cmd = malloc(sizeof(char*) * (argc + 1));
+		unsigned int argc = (unsigned int)(state->argc - state->next);
+		arguments->cmd = malloc(sizeof(char *) * (argc + 1));
 		assert(arguments->cmd);
 
 		char **argv = state->argv + state->next;
@@ -125,6 +131,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 
 		break;
 	} case ARGP_KEY_END:
+		// *INDENT-OFF*
 		switch (arguments->task) {
 		case task_schedule:
 			if (state->arg_num <= 2) {

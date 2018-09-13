@@ -29,7 +29,7 @@
 int messengerSendJob(int serverdir, struct job job)
 {
 	int fifo = openat(serverdir, SFILE_FIFO,
-			O_WRONLY | O_NONBLOCK | O_CLOEXEC);
+			  O_WRONLY | O_NONBLOCK | O_CLOEXEC);
 	if (fifo < 0) {
 		if (errno == ENXIO || errno == ENOENT) {
 			puts("The server is not running");
@@ -44,7 +44,7 @@ int messengerSendJob(int serverdir, struct job job)
 		return 1;
 	}
 	assert(len >= 0);
-	ssize_t s = (ssize_t) write(fifo, buf, (size_t) len);
+	ssize_t s = (ssize_t) write(fifo, buf, (size_t)len);
 	if (s == -1) {
 		printf("Failed to send: %s\n", strerror(errno));
 		return 1;
@@ -81,7 +81,7 @@ static void processFIFO(struct server server, int fifo)
 			}
 			s = 0;
 		}
-		bufused += (size_t) s;
+		bufused += (size_t)s;
 		if (bufused <= 0) {
 			return;
 		}
@@ -109,18 +109,19 @@ static void processFIFO(struct server server, int fifo)
 		//
 		// copies the values that are currently in the range
 		// [next, buf+bufunused] to the front of buf.
-		bufused -= (size_t) (next - buf);
+		bufused -= (size_t)(next - buf);
 		memmove(buf, next, bufused);
 	}
 }
 
-__attribute__((noreturn)) static void* messengerReader(void *srvr)
+__attribute__((noreturn))
+static void *messengerReader(void *srvr)
 {
-	struct server server = *((struct server *) srvr);
+	struct server server = *((struct server *)srvr);
 	fprintf(server.log, "Messenger is initializing\n");
 	fflush(server.log);
 	int fifo_read = openat(server.server, SFILE_FIFO,
-			O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+			       O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	if (fifo_read == -1) {
 		fprintf(server.err, "Could not open fifo for reading\n");
 
@@ -134,7 +135,7 @@ __attribute__((noreturn)) static void* messengerReader(void *srvr)
 	fflush(server.log);
 
 	while (1) {
-		sleep(1); //TODO use pselect or something?
+		sleep(1);	//TODO use pselect or something?
 		processFIFO(server, fifo_read);
 	}
 }
@@ -169,12 +170,13 @@ int messengerLaunchServer(int fd, unsigned int numSlots)
 	}
 
 	pthread_t unused;
-	status = pthread_create(&unused, NULL, messengerReader, (void*) &server);
+	status =
+	    pthread_create(&unused, NULL, messengerReader, (void *)&server);
 	if (status) {
 		fprintf(server.err, "Failed to start reader thread: %s\n",
 			strerror(status));
 		exit(1);
 	}
 
-	serverMain((void*) &server);
+	serverMain((void *)&server);
 }

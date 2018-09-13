@@ -52,7 +52,8 @@ unsigned int slotsAvailible();
 // On success, the next function call to slots MUST be slotsRegisterSet or
 // slotsUnreserveSet, and it must be passed the same count and slotv
 // values. Making any other function call results in undefined behavior.
-int slotsReserveSet(unsigned int count, unsigned int *slotv) __attribute__((nonnull (2)));
+int slotsReserveSet(unsigned int count, unsigned int *slotv)
+    __attribute__((nonnull(2)));
 
 // This function's behavior is only defined when the prior function call was to
 // slotsReserveSet with the same values for count, and the same values in the
@@ -64,8 +65,8 @@ int slotsReserveSet(unsigned int count, unsigned int *slotv) __attribute__((nonn
 // This registers the set of slots returned from slotsReserveSet as being
 // associated with pid. To free these slots for use by a different process, call
 // slotsRelease.
-void slotsRegisterSet(pid_t pid, unsigned int count, unsigned int *slotv) __attribute__((nonnull (3)));
-
+void slotsRegisterSet(pid_t pid, unsigned int count, unsigned int *slotv)
+    __attribute__((nonnull(3)));
 
 // This function's behavior is only defined when the prior function call was to
 // slotsReserveSet with the same values for count, and the same values in the
@@ -73,7 +74,8 @@ void slotsRegisterSet(pid_t pid, unsigned int count, unsigned int *slotv) __attr
 //
 // The slots allocated by slotsReserveSet are freed by this function so that
 // they may be used by other processes.
-void slotsUnreserveSet(unsigned int count, unsigned int *slotv) __attribute__((nonnull (2)));
+void slotsUnreserveSet(unsigned int count, unsigned int *slotv)
+    __attribute__((nonnull(2)));
 
 // "Unregisters" the given pid, and frees its slot for reuse
 //

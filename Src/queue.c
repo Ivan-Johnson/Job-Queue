@@ -100,7 +100,7 @@ static void queueGrow(void)
 void queueEnqueue(struct job job)
 {
 	queueInitialize();
-	if (old == index(new + 1)) { //queue is full
+	if (old == index(new + 1)) {	//queue is full
 		queueGrow();
 	}
 	jobs[new] = job;
@@ -110,9 +110,9 @@ void queueEnqueue(struct job job)
 size_t queueSize(void)
 {
 	//subtract two because index zero and index new are empty
-	if (old <= new) { // The queue is not wrapped
+	if (old <= new) {	// The queue is not wrapped
 		return new - old;
-	} else { //end of queue loops back to start of the array
+	} else {		//end of queue loops back to start of the array
 		// the total number of cells in the array, if we ignore index 0
 		size_t num_cells = arr_len - 1;
 

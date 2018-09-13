@@ -58,9 +58,10 @@ int serverAddJob(struct job job)
 
 int serverShutdown(bool killRunning)
 {
-	(void) killRunning;
+	(void)killRunning;
 	assert(this != NULL);
-	fprintf(this->err, "Exiting abruptly, as graceful shutdowns are not yet implemented\n");
+	fprintf(this->err,
+		"Exiting abruptly, as graceful shutdowns are not yet implemented\n");
 	serverClose(*this);
 	exit(1);
 	//TODO:
@@ -96,7 +97,8 @@ static struct job getJob()
 	return job;
 }
 
-static int constructEnvval(size_t slotc, unsigned int *slotv, size_t buflen, char *buf)
+static int constructEnvval(size_t slotc, unsigned int *slotv, size_t buflen,
+			   char *buf)
 {
 	assert(slotc > 0);
 	size_t offset = 0;
@@ -109,8 +111,8 @@ static int constructEnvval(size_t slotc, unsigned int *slotv, size_t buflen, cha
 		} else {
 			fstring = "%u,";
 		}
-		size_t chars = (size_t) snprintf(buf + offset, space,
-				fstring, slotv[s]);
+		size_t chars = (size_t)snprintf(buf + offset, space,
+						fstring, slotv[s]);
 		if (chars == space) {
 			return 1;
 		}
@@ -150,7 +152,7 @@ static int runJob(struct job job)
 		return 0;
 	}
 
-	execv(job.argv[0], job.argv); // no return unless it fails
+	execv(job.argv[0], job.argv);	// no return unless it fails
 	fprintf(this->err,
 		"execv failed for \"%s\" command with \"%s\"\n",
 		job.argv[0], strerror(errno));
@@ -182,7 +184,7 @@ static void monitorChildren()
 		if (WIFSIGNALED(status)) {
 			slotsRelease(pid);
 			// WTERMSIG(status)
-		} else if(WIFEXITED(status)) {
+		} else if (WIFEXITED(status)) {
 			slotsRelease(pid);
 			// WEXITSTATUS(status)
 		}
@@ -223,7 +225,8 @@ static void runJobs()
 	assert(!fail);
 }
 
-__attribute__((noreturn)) void serverMain(void *srvr)
+__attribute__((noreturn))
+void serverMain(void *srvr)
 {
 	this = srvr;
 	assert(this->numSlots > 0);
@@ -324,7 +327,7 @@ int openServer(int dirFD, struct server *s, unsigned int numSlots)
 
 	int fd;
 	fd = openat(s->server, LOG, O_WRONLY | O_CREAT | O_CLOEXEC,
-		SERVER_DIR_PERMS);
+		    SERVER_DIR_PERMS);
 	if (fd < 0) {
 		serverClose(*s);
 		return 1;
@@ -335,7 +338,7 @@ int openServer(int dirFD, struct server *s, unsigned int numSlots)
 		return 1;
 	}
 	fd = openat(s->server, ERR, O_WRONLY | O_CREAT | O_CLOEXEC,
-		SERVER_DIR_PERMS);
+		    SERVER_DIR_PERMS);
 	if (fd < 0) {
 		serverClose(*s);
 		return 1;
@@ -350,13 +353,12 @@ int openServer(int dirFD, struct server *s, unsigned int numSlots)
 		serverClose(*s);
 		return 1;
 	}
-
 	//TODO when *launching* the server, we reader creates its own fd. When
 	//scheduling a command, we don't even call this function. So we don't
 	//actually need a fifo fd in server, do we?
 	mkfifoat(s->server, SFILE_FIFO, SERVER_DIR_PERMS);
 	s->fifo = openat(s->server, SFILE_FIFO,
-			O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+			 O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	if (s->fifo < 0) {
 		serverClose(*s);
 		return 1;
