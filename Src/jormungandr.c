@@ -185,6 +185,7 @@ int fulfilArgs(struct arguments args)
 		fail = messengerSendJob(server, job);
 		if (fail) {
 			fprintf(stderr, "Failed to send job");
+			return 1;
 		}
 		return 0;
 	case task_undefined:
