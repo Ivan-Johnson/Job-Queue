@@ -22,6 +22,10 @@
 #define OPTION_PRIORITY 'p'
 #define OPTION_SLOTSMAX 's'
 #define OPTION_SLOTSUSE 'c'
+#define OPTION_PORT 'o'
+
+#define DEFAULT_PORT 417784
+#define DEFAULT_PORT_STR "417784"
 
 const char *argp_program_version =
     "Jörmungandr v0.3.0-alpha\n"
@@ -31,14 +35,16 @@ const char *argp_program_version =
 const char *argp_program_bug_address = "<git@IvanJohnson.net>";
 static const char doc[] = "Jörmungandr -- a tool running a queue of jobs";
 static const char args_doc[] =
-    "launch <serverdir> [-s slots] [--slotsmax=slots]\n"
-    "schedule <serverdir> [-c slots] [--slotsuse=slots] [-p] [--priority] -- <cmd> [args...]";
+    "launch <serverdir>\n"
+    "schedule <serverdir> -- <cmd> [cmdargs...]";
 static struct argp_option options[] = {
-	{ "slotsmax", OPTION_SLOTSMAX, "slots", OPTION_NO_USAGE,
+	{ "port", OPTION_PORT, "port", 0,
+	  "When launching a server, specifies what port to communicate on (default: " DEFAULT_PORT_STR ")", 0 },
+	{ "slotsmax", OPTION_SLOTSMAX, "slots", 0,
 	 "Specifies the number of slots to start servers with", 0 },
-	{ "priority", OPTION_PRIORITY, 0, OPTION_NO_USAGE,
+	{ "priority", OPTION_PRIORITY, 0, 0,
 	 "Put the given command at the front of the queue", 0 },
-	{ "slotsuse", OPTION_SLOTSUSE, "slots", OPTION_NO_USAGE,
+	{ "slotsuse", OPTION_SLOTSUSE, "slots", 0,
 	 "How many slots the given command occupies", 0 },
 	{ 0, 0, 0, 0, 0, 0 }
 };
@@ -70,6 +76,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 	case ARGP_KEY_INIT:
 		arguments->task = task_undefined;
 		arguments->server = NULL;
+		arguments->port = DEFAULT_PORT;
 		arguments->cmd = NULL;
 		arguments->slotsMax = 0;
 		arguments->slotsUse = 1;
@@ -101,6 +108,18 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 			argp_usage(state);	// no return
 		}
 		arguments->slotsMax = val;
+		break;
+	case OPTION_PORT:
+		fail = parseUInt(arg, &val);
+		if (fail == 1) {
+			printf
+			    ("The number of slots must be in the range [%u, %u]\n",
+			     0, UINT_MAX);
+		}
+		if (fail) {
+			argp_usage(state);	// no return
+		}
+		arguments->port = val;
 		break;
 	case ARGP_KEY_ARG:
 		if (state->arg_num == 0) {
@@ -159,6 +178,8 @@ struct arguments parseArgs(int argc, char **argv)
 {
 	struct arguments args;
 	args.server = NULL;
+	//TODO do we actually have to initialize these?
+	args.port = 0;
 	args.cmd = NULL;
 	argp_parse(&argp, argc, argv, 0, 0, &args);
 	return args;

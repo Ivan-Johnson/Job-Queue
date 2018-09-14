@@ -21,6 +21,7 @@ enum task {
 struct arguments {
 	enum task task;
 	char *server;
+	unsigned int port;
 	// cmd is NULL terminated.
 	char **cmd;
 	unsigned int slotsUse;
