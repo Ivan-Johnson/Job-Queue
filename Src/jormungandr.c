@@ -74,13 +74,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 
 	switch (key) {
 	case ARGP_KEY_INIT:
+		//sentry values
 		arguments->task = task_undefined;
 		arguments->server = NULL;
-		arguments->port = DEFAULT_PORT;
 		arguments->cmd = NULL;
-		arguments->slotsMax = 0;
-		arguments->slotsUse = 1;
-		arguments->priority = false;
 		break;
 	case OPTION_PRIORITY:
 		arguments->priority = true;
@@ -153,12 +150,14 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 		// *INDENT-OFF*
 		switch (arguments->task) {
 		case task_schedule:
-			if (state->arg_num <= 2) {
+			if (state->arg_num <= 2 ||
+				arguments->cmd == NULL) {
 				argp_usage(state);
 			}
 			break;
 		case task_launch:
-			if (state->arg_num != 2) {
+			if (state->arg_num != 2 ||
+				arguments->server == NULL) {
 				argp_usage(state);
 			}
 			break;
@@ -177,10 +176,13 @@ static struct argp argp = { options, parse_opt, args_doc, doc, 0, 0, 0 };
 struct arguments parseArgs(int argc, char **argv)
 {
 	struct arguments args;
-	args.server = NULL;
-	//TODO do we actually have to initialize these?
-	args.port = 0;
-	args.cmd = NULL;
+
+	// default values
+	args.slotsMax = 0;
+	args.slotsUse = 1;
+	args.priority = false;
+	args.port = DEFAULT_PORT;
+
 	argp_parse(&argp, argc, argv, 0, 0, &args);
 	return args;
 }
