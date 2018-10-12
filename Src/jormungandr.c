@@ -35,11 +35,11 @@ const char *argp_program_version =
 const char *argp_program_bug_address = "<git@IvanJohnson.net>";
 static const char doc[] = "Jörmungandr -- a tool running a queue of jobs";
 static const char args_doc[] =
-    "launch <serverdir>\n"
-    "schedule <serverdir> -- <cmd> [cmdargs...]";
+    "launch <serverdir>\n" "schedule <serverdir> -- <cmd> [cmdargs...]";
 static struct argp_option options[] = {
 	{ "port", OPTION_PORT, "port", 0,
-	  "When launching a server, specifies what port to communicate on (default: " DEFAULT_PORT_STR ")", 0 },
+	 "When launching a server, specifies what port to communicate on (default: "
+	 DEFAULT_PORT_STR ")", 0 },
 	{ "slotsmax", OPTION_SLOTSMAX, "slots", 0,
 	 "Specifies the number of slots to start servers with", 0 },
 	{ "priority", OPTION_PRIORITY, 0, 0,
@@ -147,17 +147,15 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 
 		break;
 	} case ARGP_KEY_END:
-		// *INDENT-OFF*
+		// *INDENT-ON*
 		switch (arguments->task) {
 		case task_schedule:
-			if (state->arg_num <= 2 ||
-				arguments->cmd == NULL) {
+			if (state->arg_num <= 2 || arguments->cmd == NULL) {
 				argp_usage(state);
 			}
 			break;
 		case task_launch:
-			if (state->arg_num != 2 ||
-				arguments->server == NULL) {
+			if (state->arg_num != 2 || arguments->server == NULL) {
 				argp_usage(state);
 			}
 			break;
