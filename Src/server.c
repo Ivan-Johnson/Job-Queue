@@ -345,7 +345,9 @@ int openServer(int dirFD, struct server *s, unsigned int numSlots,
 		return 1;
 	}
 	snprintf(buf, numChars, "%d", s->port);
-	write(fd, buf, numChars);
+	size_t strlen = strnlen(buf, numChars);
+	assert(strlen < numChars);
+	write(fd, buf, strlen);
 	free(buf);
 	// TODO ASAP: change file referenced by fd to be read only
 	close(fd);
