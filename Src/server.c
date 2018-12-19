@@ -298,6 +298,7 @@ static struct server serverInitialize(void)
 	s.log = NULL;
 	s.err = NULL;
 	s.server = -1;
+	s.port = 0;
 	s.fifo = -1;
 	s.numSlots = 0;
 	s.slotBuff = NULL;
