@@ -115,7 +115,7 @@ static void processFIFO(struct server server, int fifo)
 }
 
 __attribute__((noreturn))
-static void *messengerReader(void *srvr)
+void *messengerReader(void *srvr)
 {
 	struct server server = *((struct server *)srvr);
 	fprintf(server.log, "Messenger is initializing\n");
@@ -138,45 +138,4 @@ static void *messengerReader(void *srvr)
 		sleep(1);	//TODO use pselect or something?
 		processFIFO(server, fifo_read);
 	}
-}
-
-int messengerLaunchServer(int fd, unsigned int numSlots, unsigned int port)
-{
-	if (numSlots == 0) {
-		numSlots = 1;
-	}
-	int status;
-	struct server server;
-	status = openServer(fd, &server, numSlots, port);
-	if (status) {
-		return 1;
-	}
-
-	int pid = fork();
-	if (pid == -1) {
-		puts("Failed to fork a server");
-		serverClose(server);
-		return 1;
-	} else if (pid != 0) {
-		puts("Successfully forked a server");
-		serverClose(server);
-		return 0;
-	}
-
-	status = setsid();
-	if (status == -1) {
-		fprintf(server.err, "Failed to setsid: %s\n", strerror(errno));
-		exit(1);
-	}
-
-	pthread_t unused;
-	status =
-	    pthread_create(&unused, NULL, messengerReader, (void *)&server);
-	if (status) {
-		fprintf(server.err, "Failed to start reader thread: %s\n",
-			strerror(status));
-		exit(1);
-	}
-
-	serverMain((void *)&server);
 }

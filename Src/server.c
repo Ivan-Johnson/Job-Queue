@@ -29,6 +29,7 @@
 #include "server.h"
 #include "stack.h"
 #include "slots.h"
+#include "messenger.h"
 
 // TODO make these names consistent with SFILE_FIFO? or maybe not, because these
 // are not part of the public interface.
@@ -428,4 +429,45 @@ unsigned int serverGetPort(int serverdir)
 
 	free(buf);
 	return (unsigned int) l;
+}
+
+int serverForkNew(int fd, unsigned int numSlots, unsigned int port)
+{
+	if (numSlots == 0) {
+		numSlots = 1;
+	}
+	int status;
+	struct server server;
+	status = openServer(fd, &server, numSlots, port);
+	if (status) {
+		return 1;
+	}
+
+	int pid = fork();
+	if (pid == -1) {
+		puts("Failed to fork a server");
+		serverClose(server);
+		return 1;
+	} else if (pid != 0) {
+		puts("Successfully forked a server");
+		serverClose(server);
+		return 0;
+	}
+
+	status = setsid();
+	if (status == -1) {
+		fprintf(server.err, "Failed to setsid: %s\n", strerror(errno));
+		exit(1);
+	}
+
+	pthread_t unused;
+	status =
+	    pthread_create(&unused, NULL, messengerReader, (void *)&server);
+	if (status) {
+		fprintf(server.err, "Failed to start reader thread: %s\n",
+			strerror(status));
+		exit(1);
+	}
+
+	serverMain((void *)&server);
 }

@@ -15,8 +15,6 @@
 
 int messengerSendJob(int serverdir, struct job job);
 
-//numSlots == 0: use an implementation defined number of slots
-int messengerLaunchServer(int serverdir, unsigned int numSlots,
-	unsigned int port);
+void *messengerReader(void *srvr);
 
 #endif
