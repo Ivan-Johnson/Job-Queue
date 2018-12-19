@@ -21,35 +21,9 @@
 #define SFILE_FIFO "fifo"
 #define SERVER_DIR_PERMS 0700
 
-struct server {
-	int server;		// fd of the main server directory
-	int fifo;		// fd of the fifo file used to receive requests (RD_ONLY)
-	unsigned int port;	// the port that this server uses to communicate with clients
-	FILE *log;		// A file to use in place of the server's stdout
-	FILE *err;		// A file to use in place of the server's stderr
-
-	unsigned int numSlots;
-
-	// buffer for the EXCLUSIVE use of the server thread
-	// guaranteed have a length of at least numSlots
-	unsigned int *slotBuff;
-};
-
 void serverMain(void *srvr) __attribute__((noreturn));
 int serverAddJob(struct job job);
 int serverShutdown(bool killRunning);
-
-/*
- * Attempts to initialize s in preparation for launching a server.
- *
- * Returns 0 on success, nonzero on failure
- *
- * numSlots > 0
- */
-int openServer(int dirFD, struct server *s, unsigned int numSlots,
-	unsigned int port);
-
-void serverClose(struct server s);
 
 //Create an empty server directory at the specified path and returns a file
 //descriptor to it. If the specified directory already exists, and it has the
@@ -63,5 +37,10 @@ int getServerDir(const char *path);
 // number that the server is on. The port is always positive. Returns zero on
 // error.
 unsigned int serverGetPort(int dirFD);
+
+//TODO change fdServer to just be a path, then remove getServerDir.
+//
+//numSlots == 0: use an implementation defined number of slots
+int serverForkNew(int fdServer, unsigned int numSlots, unsigned int port);
 
 #endif

@@ -29,6 +29,7 @@
 #include "server.h"
 #include "stack.h"
 #include "slots.h"
+#include "messenger.h"
 
 // TODO make these names consistent with SFILE_FIFO? or maybe not, because these
 // are not part of the public interface.
@@ -42,8 +43,61 @@
 #define SLOT_ENVVAR "CUDA_VISIBLE_DEVICES"
 #define MAX_ENVAL_LEN 10000
 
+struct server {
+	int server;		// fd of the main server directory
+	int fifo;		// fd of the fifo file used to receive requests (RD_ONLY)
+	unsigned int port;	// the port that this server uses to communicate with clients
+	FILE *log;		// A file to use in place of the server's stdout
+	FILE *err;		// A file to use in place of the server's stderr
+
+	unsigned int numSlots;
+
+	// buffer for the EXCLUSIVE use of the server thread
+	// guaranteed have a length of at least numSlots
+	unsigned int *slotBuff;
+};
+
+static struct server concrete;
 static struct server *this = NULL;
 static pthread_mutex_t lock;
+
+static struct server serverInitialize(void)
+{
+	struct server s;
+	s.log = NULL;
+	s.err = NULL;
+	s.server = -1;
+	s.port = 0;
+	s.fifo = -1;
+	s.numSlots = 0;
+	s.slotBuff = NULL;
+	return s;
+}
+
+void serverClose()
+{
+	if (this == NULL) {
+		return;
+	}
+
+	if (this->log) {
+		fclose(this->log);
+	}
+	if (this->err) {
+		fclose(this->err);
+	}
+	if (this->fifo != -1) {
+		close(this->fifo);
+	}
+	if (this->server != -1) {
+		close(this->server);
+	}
+	if (this->slotBuff) {
+		free(this->slotBuff);
+	}
+
+	this = NULL;
+}
 
 int serverAddJob(struct job job)
 {
@@ -67,7 +121,7 @@ int serverShutdown(bool killRunning)
 	assert(this != NULL);
 	fprintf(this->err,
 		"Exiting abruptly, as graceful shutdowns are not yet implemented\n");
-	serverClose(*this);
+	serverClose();
 	exit(1);
 	//TODO:
 	//assert that server is running
@@ -128,6 +182,7 @@ static int constructEnvval(size_t slotc, unsigned int *slotv, size_t buflen,
 
 static int runJob(struct job job)
 {
+	assert(this);
 	unsigned int numslot = job.slots;
 	assert(slotsAvailible() >= numslot);
 
@@ -292,46 +347,22 @@ int getServerDir(const char *path)
 	return fd;
 }
 
-static struct server serverInitialize(void)
-{
-	struct server s;
-	s.log = NULL;
-	s.err = NULL;
-	s.server = -1;
-	s.port = 0;
-	s.fifo = -1;
-	s.numSlots = 0;
-	s.slotBuff = NULL;
-	return s;
-}
-
-void serverClose(struct server s)
-{
-	if (s.log) {
-		fclose(s.log);
-	}
-	if (s.err) {
-		fclose(s.err);
-	}
-	if (s.fifo != -1) {
-		close(s.fifo);
-	}
-	if (s.server != -1) {
-		close(s.server);
-	}
-	if (s.slotBuff) {
-		free(s.slotBuff);
-	}
-}
-
-int openServer(int dirFD, struct server *s, unsigned int numSlots,
-	unsigned int port)
+/*
+ * Attempts to initialize s in preparation for launching a server.
+ *
+ * Returns 0 on success, nonzero on failure
+ *
+ * numSlots > 0
+ */
+int serverOpen(int dirFD, unsigned int numSlots, unsigned int port)
 {
 	assert(numSlots > 0);
-	*s = serverInitialize();
-	s->server = dirFD;
-	s->numSlots = numSlots;
-	s->port = port;
+	concrete = serverInitialize();
+	this = &concrete;
+
+	this->server = dirFD;
+	this->numSlots = numSlots;
+	this->port = port;
 
 	int fd;
 
@@ -346,7 +377,7 @@ int openServer(int dirFD, struct server *s, unsigned int numSlots,
 	if (buf == NULL) {
 		return 1;
 	}
-	snprintf(buf, numChars, "%d", s->port);
+	snprintf(buf, numChars, "%d", this->port);
 	size_t strlen = strnlen(buf, numChars);
 	assert(strlen < numChars);
 	write(fd, buf, strlen);
@@ -355,48 +386,48 @@ int openServer(int dirFD, struct server *s, unsigned int numSlots,
 	close(fd);
 
 	// log file
-	fd = openat(s->server, LOG, O_WRONLY | O_CREAT | O_CLOEXEC,
+	fd = openat(this->server, LOG, O_WRONLY | O_CREAT | O_CLOEXEC,
 		    SERVER_DIR_PERMS);
 	if (fd < 0) {
-		serverClose(*s);
+		serverClose();
 		return 1;
 	}
 	// TODO: why is this (and ERR) being opened a second time? Can the
 	// append mode not be done with the initial openat?
-	s->log = fdopen(fd, "a");
-	if (!s->log) {
-		serverClose(*s);
+	this->log = fdopen(fd, "a");
+	if (!this->log) {
+		serverClose();
 		return 1;
 	}
 
 	// err file
-	fd = openat(s->server, ERR, O_WRONLY | O_CREAT | O_CLOEXEC,
+	fd = openat(this->server, ERR, O_WRONLY | O_CREAT | O_CLOEXEC,
 		    SERVER_DIR_PERMS);
 	if (fd < 0) {
-		serverClose(*s);
+		serverClose();
 		return 1;
 	}
-	s->err = fdopen(fd, "a");
-	if (!s->err) {
-		serverClose(*s);
+	this->err = fdopen(fd, "a");
+	if (!this->err) {
+		serverClose();
 		return 1;
 	}
 
 	// slotBuff
-	s->slotBuff = malloc(sizeof(unsigned int) * s->numSlots);
-	if (!s->slotBuff) {
-		serverClose(*s);
+	this->slotBuff = malloc(sizeof(unsigned int) * this->numSlots);
+	if (!this->slotBuff) {
+		serverClose();
 		return 1;
 	}
 
 	//TODO when *launching* the server, the reader creates its own fd. When
 	//scheduling a command, we don't even call this function. So we don't
 	//actually need a fifo fd in server, do we?
-	mkfifoat(s->server, SFILE_FIFO, SERVER_DIR_PERMS);
-	s->fifo = openat(s->server, SFILE_FIFO,
+	mkfifoat(this->server, SFILE_FIFO, SERVER_DIR_PERMS);
+	this->fifo = openat(this->server, SFILE_FIFO,
 			 O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-	if (s->fifo < 0) {
-		serverClose(*s);
+	if (this->fifo < 0) {
+		serverClose();
 		return 1;
 	}
 	return 0;
@@ -428,4 +459,48 @@ unsigned int serverGetPort(int serverdir)
 
 	free(buf);
 	return (unsigned int) l;
+}
+
+int serverForkNew(int fd, unsigned int numSlots, unsigned int port)
+{
+	if (numSlots == 0) {
+		numSlots = 1;
+	}
+	int status;
+	status = serverOpen(fd, numSlots, port);
+	if (status) {
+		return 1;
+	}
+
+	int pid = fork();
+	if (pid == -1) {
+		puts("Failed to fork a server");
+		serverClose();
+		return 1;
+	} else if (pid != 0) {
+		puts("Successfully forked a server");
+		serverClose();
+		return 0;
+	}
+
+	status = setsid();
+	if (status == -1) {
+		fprintf(this->err, "Failed to setsid: %s\n", strerror(errno));
+		exit(1);
+	}
+
+	struct messengerReaderArgs args;
+	args.log = this->log;
+	args.err = this->err;
+	args.server = this->server;
+	pthread_t unused;
+	status =
+	    pthread_create(&unused, NULL, messengerReader, (void *)&args);
+	if (status) {
+		fprintf(this->err, "Failed to start reader thread: %s\n",
+			strerror(status));
+		exit(1);
+	}
+
+	serverMain((void *)&concrete);
 }
