@@ -15,6 +15,12 @@
 
 int messengerSendJob(int serverdir, struct job job);
 
+struct messengerReaderArgs {
+	FILE *log;
+	FILE *err;
+	int server;
+};
+
 void *messengerReader(void *srvr);
 
 #endif

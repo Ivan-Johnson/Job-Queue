@@ -68,7 +68,7 @@ static int processJob(struct job job)
 	return serverAddJob(job);
 }
 
-static void processFIFO(struct server server, int fifo)
+static void processFIFO(int fifo, FILE *fLog, FILE *fErr)
 {
 	char buf[PIPE_BUF];
 	// number of bytes in buf that are currently in use
@@ -89,19 +89,19 @@ static void processFIFO(struct server server, int fifo)
 		char *next;
 		int fail = unserializeJob(&job, buf, bufused, &next);
 		if (fail) {
-			fprintf(server.err, "Unserialization failed\n");
-			fflush(server.err);
+			fprintf(fErr, "Unserialization failed\n");
+			fflush(fErr);
 			return;
 		}
 
 		fail = processJob(job);
 		if (fail) {
-			fprintf(server.err, "Error when scheduling job: %s\n",
+			fprintf(fErr, "Error when scheduling job: %s\n",
 				job.argv[0]);
-			fflush(server.err);
+			fflush(fErr);
 		} else {
-			fprintf(server.log, "Scheduled job: %s\n", job.argv[0]);
-			fflush(server.log);
+			fprintf(fLog, "Scheduled job: %s\n", job.argv[0]);
+			fflush(fLog);
 		}
 		freeUnserializedJob(job);
 
@@ -117,25 +117,23 @@ static void processFIFO(struct server server, int fifo)
 __attribute__((noreturn))
 void *messengerReader(void *srvr)
 {
-	struct server server = *((struct server *)srvr);
-	fprintf(server.log, "Messenger is initializing\n");
-	fflush(server.log);
-	int fifo_read = openat(server.server, SFILE_FIFO,
+	struct messengerReaderArgs args = *((struct messengerReaderArgs *)srvr);
+	fprintf(args.log, "Messenger is initializing\n");
+	fflush(args.log);
+	int fifo_read = openat(args.server, SFILE_FIFO,
 			       O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	if (fifo_read == -1) {
-		fprintf(server.err, "Could not open fifo for reading\n");
-
-		serverClose(server);
+		fprintf(args.err, "Could not open fifo for reading\n");
 
 		serverShutdown(false);
 		pthread_exit(NULL);
 	}
-	fprintf(server.log,
+	fprintf(args.log,
 		"Messenger successfully opened the fifo for reading\n");
-	fflush(server.log);
+	fflush(args.log);
 
 	while (1) {
 		sleep(1);	//TODO use pselect or something?
-		processFIFO(server, fifo_read);
+		processFIFO(fifo_read, args.log, args.err);
 	}
 }

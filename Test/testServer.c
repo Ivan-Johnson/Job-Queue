@@ -16,8 +16,10 @@
 
 #define SDIR "/tmp/JormungandrServerTest/"
 
-int sFD;
-struct server s;
+// TODO make a private header so that we don't have to forward declare like
+// this?
+int serverOpen(int dirFD, unsigned int numSlots, unsigned int port);
+void serverClose();
 
 void setUp()
 {
@@ -40,12 +42,11 @@ void testPortFile()
 	int sFD = getServerDir(SDIR);
 	assert(sFD >= 0);
 
-	struct server s;
-	fail = openServer(sFD, &s, 3, port);
+	fail = serverOpen(sFD, 3, port);
 	TEST_ASSERT_EQUAL_INT(0, fail);
 
 	unsigned int foundPort = serverGetPort(sFD);
-	serverClose(s);
+	serverClose();
 
 	TEST_ASSERT_EQUAL_INT(port, foundPort);
 }
