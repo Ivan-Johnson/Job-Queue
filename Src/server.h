@@ -64,6 +64,8 @@ int getServerDir(const char *path);
 // error.
 unsigned int serverGetPort(int dirFD);
 
+//TODO change fdServer to just be a path, then remove getServerDir.
+//
 //numSlots == 0: use an implementation defined number of slots
 int serverForkNew(int fdServer, unsigned int numSlots, unsigned int port);
 
