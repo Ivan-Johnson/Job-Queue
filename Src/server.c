@@ -29,8 +29,11 @@
 #include "stack.h"
 #include "slots.h"
 
-//TODO make these names consistent with SFILE_FIFO? or maybe not, because these
-//are not part of the public interface.
+// TODO make these names consistent with SFILE_FIFO? or maybe not, because these
+// are not part of the public interface.
+//
+// TODO why /aren't/ these part of the public interface? That way they could be
+// incorperated into the argp help documentation.
 #define LOG "log.txt"
 #define ERR "err.txt"
 
@@ -332,11 +335,15 @@ int openServer(int dirFD, struct server *s, unsigned int numSlots)
 		serverClose(*s);
 		return 1;
 	}
+	// TODO: why is this (and ERR) being opened a second time? Can the
+	// append mode not be done with the initial openat?
 	s->log = fdopen(fd, "a");
 	if (!s->log) {
 		serverClose(*s);
 		return 1;
 	}
+
+	// err file
 	fd = openat(s->server, ERR, O_WRONLY | O_CREAT | O_CLOEXEC,
 		    SERVER_DIR_PERMS);
 	if (fd < 0) {
@@ -348,12 +355,15 @@ int openServer(int dirFD, struct server *s, unsigned int numSlots)
 		serverClose(*s);
 		return 1;
 	}
+
+	// slotBuff
 	s->slotBuff = malloc(sizeof(unsigned int) * s->numSlots);
 	if (!s->slotBuff) {
 		serverClose(*s);
 		return 1;
 	}
-	//TODO when *launching* the server, we reader creates its own fd. When
+
+	//TODO when *launching* the server, the reader creates its own fd. When
 	//scheduling a command, we don't even call this function. So we don't
 	//actually need a fifo fd in server, do we?
 	mkfifoat(s->server, SFILE_FIFO, SERVER_DIR_PERMS);
