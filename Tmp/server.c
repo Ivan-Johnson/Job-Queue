@@ -46,25 +46,27 @@ int main(int argc, char *argv[])
 	int c = sizeof(struct sockaddr_in);
 
 	struct sockaddr_in client;
-	int fdClient = accept(fdSock, (void *)&client, (void *)&c);
-	if (fdClient < 0) {
-		return 4;
-	}
-	puts("Connected to client");
-
-	//Receive a message from client
-	char client_message[BUFLEN];
 	while (1) {
-		int read_size = recv(fdClient, client_message, BUFLEN, 0);
-		if (read_size == 0) {
-			puts("Client disconnected");
-			return 0;
-		} else if (read_size == -1) {
-			perror("recv failed");
-			return 5;
+		int fdClient = accept(fdSock, (void *)&client, (void *)&c);
+		if (fdClient < 0) {
+			return 4;
 		}
-		//Send the message back to client
-		write(fdClient, client_message, read_size);
+		puts("Connected to client");
+
+		//Receive a message from client
+		char client_message[BUFLEN];
+		while (1) {
+			int read_size = recv(fdClient, client_message, BUFLEN, 0);
+			if (read_size == 0) {
+				puts("Client disconnected");
+				break;
+			} else if (read_size == -1) {
+				perror("recv failed");
+				return 5;
+			}
+			//Send the message back to client
+			write(fdClient, client_message, read_size);
+		}
 	}
 	assert(false);
 }
