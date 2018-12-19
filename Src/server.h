@@ -24,6 +24,7 @@
 struct server {
 	int server;		// fd of the main server directory
 	int fifo;		// fd of the fifo file used to receive requests (RD_ONLY)
+	unsigned int port;	// the port that this server uses to communicate with clients
 	FILE *log;		// A file to use in place of the server's stdout
 	FILE *err;		// A file to use in place of the server's stderr
 
@@ -45,7 +46,8 @@ int serverShutdown(bool killRunning);
  *
  * numSlots > 0
  */
-int openServer(int dirFD, struct server *s, unsigned int numSlots);
+int openServer(int dirFD, struct server *s, unsigned int numSlots,
+	unsigned int port);
 
 void serverClose(struct server s);
 

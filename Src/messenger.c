@@ -140,14 +140,14 @@ static void *messengerReader(void *srvr)
 	}
 }
 
-int messengerLaunchServer(int fd, unsigned int numSlots)
+int messengerLaunchServer(int fd, unsigned int numSlots, unsigned int port)
 {
 	if (numSlots == 0) {
 		numSlots = 1;
 	}
 	int status;
 	struct server server;
-	status = openServer(fd, &server, numSlots);
+	status = openServer(fd, &server, numSlots, port);
 	if (status) {
 		return 1;
 	}

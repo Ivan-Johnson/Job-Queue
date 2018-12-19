@@ -197,7 +197,7 @@ int fulfilArgs(struct arguments args)
 	struct job job;
 	switch (args.task) {
 	case task_launch:
-		return messengerLaunchServer(server, args.slotsMax);
+		return messengerLaunchServer(server, args.slotsMax, 5325);
 	case task_schedule:
 		job.argv = args.cmd;
 		job.priority = args.priority;

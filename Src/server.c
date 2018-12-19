@@ -36,6 +36,7 @@
 // incorperated into the argp help documentation.
 #define LOG "log.txt"
 #define ERR "err.txt"
+#define FPORT "port.txt"
 
 #define SLOT_ENVVAR "CUDA_VISIBLE_DEVICES"
 #define MAX_ENVAL_LEN 10000
@@ -321,14 +322,35 @@ void serverClose(struct server s)
 	}
 }
 
-int openServer(int dirFD, struct server *s, unsigned int numSlots)
+int openServer(int dirFD, struct server *s, unsigned int numSlots,
+	unsigned int port)
 {
 	assert(numSlots > 0);
 	*s = serverInitialize();
 	s->server = dirFD;
 	s->numSlots = numSlots;
+	s->port = port;
 
 	int fd;
+
+	fd = openat(dirFD, FPORT, O_WRONLY | O_CREAT | O_CLOEXEC,
+		SERVER_DIR_PERMS);
+	if (fd < 0) {
+		return 1;
+	}
+	// TODO: do this intelligently (search for other instances of this problem; C-s 627)
+	unsigned int numChars = 627;
+	char *buf = malloc(sizeof(char) * numChars);
+	if (buf == NULL) {
+		return 1;
+	}
+	snprintf(buf, numChars, "%d", s->port);
+	write(fd, buf, numChars);
+	free(buf);
+	// TODO ASAP: change file referenced by fd to be read only
+	close(fd);
+
+	// log file
 	fd = openat(s->server, LOG, O_WRONLY | O_CREAT | O_CLOEXEC,
 		    SERVER_DIR_PERMS);
 	if (fd < 0) {
