@@ -59,4 +59,9 @@ void serverClose(struct server s);
 //directory on success.
 int getServerDir(const char *path);
 
+// Given a file descriptor of the server's main directory, returns the port
+// number that the server is on. The port is always positive. Returns zero on
+// error.
+unsigned int serverGetPort(int dirFD);
+
 #endif

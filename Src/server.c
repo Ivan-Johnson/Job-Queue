@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -398,4 +399,32 @@ int openServer(int dirFD, struct server *s, unsigned int numSlots,
 		return 1;
 	}
 	return 0;
+}
+
+unsigned int serverGetPort(int serverdir)
+{
+	int fdPort = openat(serverdir, FPORT, O_RDONLY);
+
+	// TODO: do this intelligently (search for other instances of this problem; C-s 627)
+	unsigned int numChars = 627;
+
+	char *buf = malloc(sizeof(char) * numChars);
+	if (buf == NULL) {
+		return 0;
+	}
+
+	ssize_t s = read(fdPort, buf, numChars);
+	if (s <= 0 || s == numChars) {
+		free(buf);
+		return 0;
+	}
+
+	long l = atol(buf);
+	if (l <= 0 || l > UINT_MAX) {
+		free(buf);
+		return 0;
+	}
+
+	free(buf);
+	return (unsigned int) l;
 }
