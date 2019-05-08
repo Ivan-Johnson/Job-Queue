@@ -7,7 +7,12 @@
  *
  * LICENSE: GPL 2.0
  */
+// for pthread_mutexattr_settype
+#define _POSIX_C_SOURCE 200809L
+
 #include <assert.h>
+#include <errno.h>
+#include <pthread.h>
 #include <stdlib.h>
 
 #include "job.h"
@@ -33,25 +38,42 @@
 #define LIST_MIN_SIZE 128
 static struct job *jobs = NULL;
 static size_t arr_len = 0, old = 0, new = 0;
+static pthread_mutex_t listMutex;
 
-static void listInitialize(void)
+void listInitialize(void)
 {
-	if (jobs == NULL) {
-		arr_len = LIST_MIN_SIZE;
-		jobs = malloc(sizeof(struct job) * arr_len);
-		old = 1;
-		new = 1;
+	assert(jobs == NULL);
+
+	arr_len = LIST_MIN_SIZE;
+	jobs = malloc(sizeof(struct job) * arr_len);
+	old = 1;
+	new = 1;
+
+	pthread_mutexattr_t attr;
+	if (pthread_mutexattr_init(&attr)) {
+		fprintf(stderr, "Could not initialize mutexattr\n");
+		exit(1);
+	}
+	if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK)) {
+		fprintf(stderr, "Could not set mutexattr to errorcheck\n");
+		exit(1);
+	}
+	if (pthread_mutex_init(&listMutex, &attr)) {
+		fprintf(stderr, "Could not initialize mutex\n");
+		exit(1);
 	}
 }
 
 size_t listCurCapacity(void)
 {
-	listInitialize();
+	assert(jobs != NULL);
 	return arr_len - 2;
 }
 
 void listFree(void)
 {
+	assert(jobs != NULL);
+	assert(!pthread_mutex_lock(&listMutex));
 	if (jobs != NULL) {
 		free(jobs);
 		jobs = NULL;
@@ -59,6 +81,7 @@ void listFree(void)
 	arr_len = 0;
 	old = 1;
 	new = 1;
+	pthread_mutex_destroy(&listMutex);
 }
 
 /*
@@ -100,7 +123,9 @@ static void listGrow(void)
 
 void listAdd(struct job job, bool isPriority)
 {
-	listInitialize();
+	assert(jobs != NULL);
+	assert(!pthread_mutex_lock(&listMutex));
+
 	if (old == index(new + 1)) {	//list is full
 		listGrow();
 	}
@@ -111,11 +136,12 @@ void listAdd(struct job job, bool isPriority)
 		jobs[new] = job;
 		new = index(new + 1);
 	}
+
+	assert(!pthread_mutex_unlock(&listMutex));
 }
 
-size_t listSize(void)
+static size_t computeSize()
 {
-	listInitialize();
 	//subtract two because index zero and index new are empty
 	if (old <= new) {	// The list is not wrapped
 		return new - old;
@@ -129,6 +155,17 @@ size_t listSize(void)
 
 		return num_cells - num_empty;
 	}
+}
+
+size_t listSize(void)
+{
+	assert(jobs != NULL);
+	assert(!pthread_mutex_lock(&listMutex));
+
+	size_t ans = computeSize();
+
+	assert(!pthread_mutex_unlock(&listMutex));
+	return ans;
 }
 
 static inline void listShrink(void)
@@ -157,18 +194,28 @@ static inline void listShrink(void)
 
 struct job listNext(void)
 {
+	assert(jobs != NULL);
+	assert(!pthread_mutex_lock(&listMutex));
+
+	struct job job;
 	if (old == new) {
-		return JOB_ZEROS;
+		job = JOB_ZEROS;
+	} else {
+		job = jobs[old];
+		old = index(old + 1);
+		if (computeSize() < arr_len / 4) {
+			listShrink();
+		}
 	}
-	struct job job = jobs[old];
-	old = index(old + 1);
-	if (listSize() < arr_len / 4) {
-		listShrink();
-	}
+	assert(!pthread_mutex_unlock(&listMutex));
 	return job;
 }
 
 struct job listPeek(void)
 {
-	return jobs[index(old)];
+	assert(jobs != NULL);
+	assert(!pthread_mutex_lock(&listMutex));
+	struct job ans = jobs[index(old)];
+	assert(!pthread_mutex_unlock(&listMutex));
+	return ans;
 }

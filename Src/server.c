@@ -58,7 +58,6 @@ struct server {
 
 static struct server concrete;
 static struct server *this = NULL;
-static pthread_mutex_t lock;
 
 static struct server serverInitialize(void)
 {
@@ -100,12 +99,7 @@ void serverClose()
 
 int serverAddJob(struct job job)
 {
-	int fail;
-	fail = pthread_mutex_lock(&lock);
-	assert(!fail);
 	listAdd(job, job.priority);
-	fail = pthread_mutex_unlock(&lock);
-	assert(!fail);
 	//TODO wake server thread
 	return 0;
 }
@@ -135,10 +129,6 @@ int serverShutdown(bool killRunning)
 static struct job getJob()
 {
 	struct job job;
-	int fail;
-
-	fail = pthread_mutex_lock(&lock);
-	assert(fail == EDEADLK);
 
 	job = listNext();
 	if (listSize() > 0) {
@@ -249,9 +239,6 @@ static void runJobs()
 {
 	int fail;
 
-	fail = pthread_mutex_lock(&lock);
-	assert(!fail);
-
 	while (1) {
 		struct job job = getJob();
 		if (jobEq(job, JOB_ZEROS)) {
@@ -274,9 +261,6 @@ static void runJobs()
 		}
 		freeJobClone(job);
 	}
-
-	fail = pthread_mutex_unlock(&lock);
-	assert(!fail);
 }
 
 __attribute__((noreturn))
@@ -284,24 +268,14 @@ void serverMain(void *srvr)
 {
 	this = srvr;
 	assert(this->numSlots > 0);
-	pthread_mutexattr_t attr;
-	if (pthread_mutexattr_init(&attr)) {
-		fprintf(this->err, "Could not initialize mutexattr\n");
-		exit(1);
-	}
-	if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK)) {
-		fprintf(this->err, "Could not set mutexattr to errorcheck\n");
-		exit(1);
-	}
-	if (pthread_mutex_init(&lock, &attr)) {
-		fprintf(this->err, "Could not initialize mutex\n");
-		exit(1);
-	}
 	int fail = slotsMalloc(this->numSlots);
 	if (fail) {
 		fprintf(this->err, "Could not initialize slots module\n");
 		exit(1);
 	}
+
+	fail = listInitialize();
+	assert(!fail);
 
 	while (1) {
 		fflush(this->log);

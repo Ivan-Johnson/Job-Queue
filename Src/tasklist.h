@@ -15,6 +15,8 @@
 #include "job.h"
 #include "server.h"
 
+int listInitialize();
+
 void listAdd(struct job, bool isPriority);
 size_t listSize(void);
 

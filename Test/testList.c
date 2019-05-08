@@ -33,6 +33,8 @@ struct job jobs[ARR_LEN];
 
 void setUp()
 {
+	listInitialize();
+
 	TEST_ASSERT_EQUAL_INT(0, listSize());
 
 	jobs[0] = job1;
@@ -45,7 +47,6 @@ void setUp()
 void tearDown()
 {
 	listFree();
-	TEST_ASSERT_EQUAL_INT(0, listSize());
 }
 
 void testRandomGrowth()

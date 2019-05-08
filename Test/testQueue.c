@@ -30,6 +30,8 @@ struct job jobs[ARR_LEN];
 
 void setUp()
 {
+	listInitialize();
+
 	TEST_ASSERT_EQUAL_INT(0, listSize());
 	//advances the list indicies to near the end of the length 128 array
 	for (int x = 0; x < 125; x++) {
@@ -48,7 +50,6 @@ void setUp()
 void tearDown()
 {
 	listFree();
-	TEST_ASSERT_EQUAL_INT(0, listSize());
 }
 
 /*
