@@ -85,3 +85,21 @@ void testRandomGrowth()
 
 	free(arr);
 }
+
+void testOverdraw()
+{
+	// Verify that calling listNext when list is empty returns JOB_ZEROS
+
+	// Add and remove many items from the list. This is a roundabout way of
+	// ensuring that the list's internal array does not contain the
+	// JOB_ZEROS array.
+	TEST_ASSERT_TRUE(listSize() == 0);
+	size_t cap = listCurCapacity();
+	for (size_t x = 0; x < cap; x++) {
+		listAdd(jobs[0], false);
+		listNext();
+	}
+
+	TEST_ASSERT_TRUE(listSize() == 0);
+	TEST_ASSERT_TRUE(jobEq(listNext(), JOB_ZEROS));
+}

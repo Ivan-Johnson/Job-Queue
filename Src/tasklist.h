@@ -17,7 +17,16 @@
 
 void listAdd(struct job, bool isPriority);
 size_t listSize(void);
+
+/*
+ * if listSize() > 0:
+ *     Removes and returns the next item from the list.
+ * else:
+ *     return JOB_ZEROS
+ */
 struct job listNext(void);
+
+
 struct job listPeek(void);
 void listFree(void);
 

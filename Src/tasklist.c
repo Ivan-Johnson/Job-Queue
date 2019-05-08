@@ -157,6 +157,9 @@ static inline void listShrink(void)
 
 struct job listNext(void)
 {
+	if (old == new) {
+		return JOB_ZEROS;
+	}
 	struct job job = jobs[old];
 	old = index(old + 1);
 	if (listSize() < arr_len / 4) {
