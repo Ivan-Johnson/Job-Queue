@@ -25,9 +25,8 @@
 #include <unistd.h>
 
 #include "job.h"
-#include "queue.h"
+#include "tasklist.h"
 #include "server.h"
-#include "stack.h"
 #include "slots.h"
 #include "messenger.h"
 
@@ -104,11 +103,7 @@ int serverAddJob(struct job job)
 	int fail;
 	fail = pthread_mutex_lock(&lock);
 	assert(!fail);
-	if (job.priority) {
-		stackPush(job);
-	} else {
-		queueEnqueue(job);
-	}
+	listAdd(job, job.priority);
 	fail = pthread_mutex_unlock(&lock);
 	assert(!fail);
 	//TODO wake server thread
@@ -145,10 +140,9 @@ static struct job getJob()
 	fail = pthread_mutex_lock(&lock);
 	assert(fail == EDEADLK);
 
-	if (stackSize() > 0) {
-		job = stackPop();
-	} else if (queueSize() > 0) {
-		job = queueDequeue();
+	job = listNext();
+	if (listSize() > 0) {
+		job = listNext();
 	} else {
 		job = JOB_ZEROS;
 	}
@@ -265,7 +259,7 @@ static void runJobs()
 		}
 
 		if (slotsAvailible() < job.slots) {
-			stackPush(job);
+			listAdd(job, true);
 			break;
 		}
 
@@ -313,8 +307,8 @@ void serverMain(void *srvr)
 		fflush(this->log);
 		sleep(3);
 		monitorChildren();
-		fprintf(this->log, "Queue: %zd; Stack: %zd; free slots: %u\n",
-			queueSize(), stackSize(), slotsAvailible());
+		fprintf(this->log, "tasks: %zd; free slots: %u\n",
+			listSize(), slotsAvailible());
 
 		runJobs();
 	}

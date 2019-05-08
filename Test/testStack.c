@@ -1,15 +1,16 @@
 /*
  * Test/testStack.c
  *
- * Tests the job stack
+ * Tests if tasklist can function as a stack
  *
  * Copyright(C) 2018, Ivan Tobias Johnson
  *
  * LICENSE: GPL 2.0
  */
-#include "stack.h"
+#include "tasklist.h"
 
 #include <unity.h>
+#include <stdbool.h>
 
 char *args0[] = {"args_0", NULL};
 struct job job0 = {1, false, args0};
@@ -30,7 +31,7 @@ struct job jobs[ARR_LEN];
 
 void setUp()
 {
-	TEST_ASSERT_EQUAL_INT(0, stackSize());
+	TEST_ASSERT_EQUAL_INT(0, listSize());
 
 	jobs[0] = job1;
 	jobs[1] = job2;
@@ -41,193 +42,193 @@ void setUp()
 
 void tearDown()
 {
-	stackFree();
-	TEST_ASSERT_EQUAL_INT(0, stackSize());
+	listFree();
+	TEST_ASSERT_EQUAL_INT(0, listSize());
 }
 
 void testWatchSize()
 {
 	struct job job;
 
-	TEST_ASSERT_EQUAL_INT(0, stackSize());
-	stackPush(job);
-	TEST_ASSERT_EQUAL_INT(1, stackSize());
-	stackPush(job);
-	TEST_ASSERT_EQUAL_INT(2, stackSize());
-	stackPush(job);
-	TEST_ASSERT_EQUAL_INT(3, stackSize());
-	stackPush(job);
-	TEST_ASSERT_EQUAL_INT(4, stackSize());
-	stackPush(job);
-	TEST_ASSERT_EQUAL_INT(5, stackSize());
-	stackPop();
-	TEST_ASSERT_EQUAL_INT(4, stackSize());
-	stackPop();
-	TEST_ASSERT_EQUAL_INT(3, stackSize());
-	stackPop();
-	TEST_ASSERT_EQUAL_INT(2, stackSize());
-	stackPop();
-	TEST_ASSERT_EQUAL_INT(1, stackSize());
-	stackPop();
-	TEST_ASSERT_EQUAL_INT(0, stackSize());
+	TEST_ASSERT_EQUAL_INT(0, listSize());
+	listAdd(job, true);
+	TEST_ASSERT_EQUAL_INT(1, listSize());
+	listAdd(job, true);
+	TEST_ASSERT_EQUAL_INT(2, listSize());
+	listAdd(job, true);
+	TEST_ASSERT_EQUAL_INT(3, listSize());
+	listAdd(job, true);
+	TEST_ASSERT_EQUAL_INT(4, listSize());
+	listAdd(job, true);
+	TEST_ASSERT_EQUAL_INT(5, listSize());
+	listNext();
+	TEST_ASSERT_EQUAL_INT(4, listSize());
+	listNext();
+	TEST_ASSERT_EQUAL_INT(3, listSize());
+	listNext();
+	TEST_ASSERT_EQUAL_INT(2, listSize());
+	listNext();
+	TEST_ASSERT_EQUAL_INT(1, listSize());
+	listNext();
+	TEST_ASSERT_EQUAL_INT(0, listSize());
 }
 
 void testPeek()
 {
-	stackPush(job0);
-	stackPush(job1);
+	listAdd(job0, true);
+	listAdd(job1, true);
 
-	TEST_ASSERT_TRUE(jobEq(stackPeek(), job1));
-	stackPop();
+	TEST_ASSERT_TRUE(jobEq(listPeek(), job1));
+	listNext();
 
-	TEST_ASSERT_TRUE(jobEq(stackPeek(), job0));
+	TEST_ASSERT_TRUE(jobEq(listPeek(), job0));
 }
 
 void testPopSimple()
 {
-	stackPush(job0);
-	stackPush(job1);
+	listAdd(job0, true);
+	listAdd(job1, true);
 
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job1));
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job0));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job1));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job0));
 }
 
 void testPop()
 {
 	//state: ∅
-	TEST_ASSERT_EQUAL_INT(0, stackSize());
+	TEST_ASSERT_EQUAL_INT(0, listSize());
 
-	stackPush(job0);
-	stackPush(job1);
-	stackPush(job2);
-	stackPush(job3);
-	stackPush(job4);
+	listAdd(job0, true);
+	listAdd(job1, true);
+	listAdd(job2, true);
+	listAdd(job3, true);
+	listAdd(job4, true);
 
 	//state: job0, job1, job2, job3, job4
-	TEST_ASSERT_EQUAL_INT(5, stackSize());
+	TEST_ASSERT_EQUAL_INT(5, listSize());
 
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job4));
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job3));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job4));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job3));
 
 	//state: job0, job1, job2
-	TEST_ASSERT_EQUAL_INT(3, stackSize());
+	TEST_ASSERT_EQUAL_INT(3, listSize());
 
-	stackPush(job4);
-	stackPush(job3);
+	listAdd(job4, true);
+	listAdd(job3, true);
 
 	//state: job0, job1, job2, job4, job3
-	TEST_ASSERT_EQUAL_INT(5, stackSize());
+	TEST_ASSERT_EQUAL_INT(5, listSize());
 
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job3));
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job4));
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job2));
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job1));
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job0));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job3));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job4));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job2));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job1));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job0));
 
 	//state: ∅
-	TEST_ASSERT_EQUAL_INT(0, stackSize());
+	TEST_ASSERT_EQUAL_INT(0, listSize());
 
-	stackPush(job2);
-	stackPush(job0);
+	listAdd(job2, true);
+	listAdd(job0, true);
 
 	//state: job2, job0
-	TEST_ASSERT_EQUAL_INT(2, stackSize());
+	TEST_ASSERT_EQUAL_INT(2, listSize());
 
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job0));
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job2));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job0));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job2));
 
 	//state: ∅
-	TEST_ASSERT_EQUAL_INT(0, stackSize());
+	TEST_ASSERT_EQUAL_INT(0, listSize());
 }
 
 void testGrowth()
 {
-	stackPush(job0);
-	size_t cap = stackCurCapacity();
+	listAdd(job0, true);
+	size_t cap = listCurCapacity();
 	for (size_t size = 1; size < cap - 2; size++) {
-		stackPush(job0);
+		listAdd(job0, true);
 	}
-	TEST_ASSERT_EQUAL_INT(cap, stackCurCapacity());
-	TEST_ASSERT_EQUAL_INT(cap - 2, stackSize());
+	TEST_ASSERT_EQUAL_INT(cap, listCurCapacity());
+	TEST_ASSERT_EQUAL_INT(cap - 2, listSize());
 
 	//state: job0 x cap - 2
 
-	stackPush(job1);
-	TEST_ASSERT_EQUAL_INT(cap, stackCurCapacity());
+	listAdd(job1, true);
+	TEST_ASSERT_EQUAL_INT(cap, listCurCapacity());
 
-	stackPush(job2);
-	TEST_ASSERT_EQUAL_INT(cap, stackCurCapacity());
-	TEST_ASSERT_EQUAL_INT(cap, stackSize());
+	listAdd(job2, true);
+	TEST_ASSERT_EQUAL_INT(cap, listCurCapacity());
+	TEST_ASSERT_EQUAL_INT(cap, listSize());
 
 	//state: job0 x cap - 2, job1, job2
 	//at this point, the stack is filled to capacity
 
-	stackPush(job3);
-	TEST_ASSERT_TRUE(stackCurCapacity() > cap);
-	TEST_ASSERT_EQUAL_INT(cap + 1, stackSize());
+	listAdd(job3, true);
+	TEST_ASSERT_TRUE(listCurCapacity() > cap);
+	TEST_ASSERT_EQUAL_INT(cap + 1, listSize());
 
 	//state: job0 x cap - 2, job1, job2, job3
 	//at this point, the stack has just grown
 
-	stackPush(job4);
-	stackPush(job5);
+	listAdd(job4, true);
+	listAdd(job5, true);
 	//state: job0 x cap - 2, job1, job2, job3, job4, job5
-	TEST_ASSERT_TRUE(stackCurCapacity() > cap);
-	TEST_ASSERT_EQUAL_INT(cap + 3, stackSize());
+	TEST_ASSERT_TRUE(listCurCapacity() > cap);
+	TEST_ASSERT_EQUAL_INT(cap + 3, listSize());
 
 	//state: job0 x cap - 2, job1, job2, job3, job4, job5
 	//pop to ensure that jobs 1-3 weren't lost in the growth process
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job5));
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job4));
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job3));
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job2));
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job1));
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job0));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job5));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job4));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job3));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job2));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job1));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job0));
 }
 
 void testShrinkage()
 {
-	stackPush(job0);
-	size_t cap = stackCurCapacity();
+	listAdd(job0, true);
+	size_t cap = listCurCapacity();
 	//If we grow once, we can shrink by popping the item at shrinkpoint
 	size_t shrinkpoint = cap / 2;
 	for (size_t size = 1; size <= cap; size++) {
 		if (shrinkpoint - 2 <= size && size <= shrinkpoint + 2) {
-			stackPush(jobs[size - shrinkpoint + 2]);
+			listAdd(jobs[size - shrinkpoint + 2], true);
 		} else {
-			stackPush(job0);
+			listAdd(job0, true);
 		}
 	}
 
 	//state: job0, …, job0, job1, job2, job3, job4, job5, job0, …, job0
 	//The last push made the stack grow, and job3 is at the shrinkpoint
-	TEST_ASSERT_TRUE(cap < stackCurCapacity());
-	TEST_ASSERT_EQUAL_INT(cap + 1, stackSize());
+	TEST_ASSERT_TRUE(cap < listCurCapacity());
+	TEST_ASSERT_EQUAL_INT(cap + 1, listSize());
 
 	//popping immediately after growing should not cause a shrink
-	stackPop();
-	TEST_ASSERT_TRUE(cap < stackCurCapacity());
+	listNext();
+	TEST_ASSERT_TRUE(cap < listCurCapacity());
 
 	for (size_t size = cap; size > shrinkpoint + 3; size--) {
-		stackPop();
+		listNext();
 	}
-	TEST_ASSERT_EQUAL_INT(shrinkpoint + 3, stackSize());
+	TEST_ASSERT_EQUAL_INT(shrinkpoint + 3, listSize());
 
 
 	//confirm that our data is still intact
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job5));
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job4));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job5));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job4));
 
 	//confirm that we haven't shrunk yet
-	TEST_ASSERT_EQUAL_INT(shrinkpoint + 1, stackSize());
-	TEST_ASSERT_TRUE(cap < stackCurCapacity());
+	TEST_ASSERT_EQUAL_INT(shrinkpoint + 1, listSize());
+	TEST_ASSERT_TRUE(cap < listCurCapacity());
 
 	//shrink
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job3));
-	TEST_ASSERT_EQUAL_INT(shrinkpoint, stackSize());
-	TEST_ASSERT_EQUAL_INT(cap, stackCurCapacity());
+	TEST_ASSERT_TRUE(jobEq(listNext(), job3));
+	TEST_ASSERT_EQUAL_INT(shrinkpoint, listSize());
+	TEST_ASSERT_EQUAL_INT(cap, listCurCapacity());
 
 	//confirm that the top of the stack is still intact
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job2));
-	TEST_ASSERT_TRUE(jobEq(stackPop(), job1));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job2));
+	TEST_ASSERT_TRUE(jobEq(listNext(), job1));
 }

@@ -1,7 +1,7 @@
 /*
- * Src/queue.c
+ * Src/tasklist.c
  *
- * implements Src/queue.h
+ * implements Src/tasklist.h
  *
  * Copyright(C) 2018, Ivan Tobias Johnson
  *
@@ -19,7 +19,7 @@
 //was most recently put on. The indicies that currently hold data are:
 //old, index(old+1), … index(new-1)
 
-//if new==old, the queue is empty
+//if new==old, the list is empty
 
 //if index(new+1) == old, then the array is full.
 
@@ -28,18 +28,18 @@
 //index(0) be the last index in the array.
 
 //NOTE: two indicies of the array are wasted. Index zero and the cell at new.
-//So the queue can store arr_len - 2 values without needing to be enlarged.
+//So the list can store arr_len - 2 values without needing to be enlarged.
 
-#define QUEUE_MIN_SIZE 128
+#define LIST_MIN_SIZE 128
 static struct job *jobs = NULL;
 static size_t arr_len = 0, old = 0, new = 0;
 
-size_t queueCurCapacity(void)
+size_t listCurCapacity(void)
 {
 	return arr_len - 2;
 }
 
-void queueFree(void)
+void listFree(void)
 {
 	if (jobs != NULL) {
 		free(jobs);
@@ -50,10 +50,10 @@ void queueFree(void)
 	new = 1;
 }
 
-static inline void queueInitialize(void)
+static inline void listInitialize(void)
 {
 	if (jobs == NULL) {
-		arr_len = QUEUE_MIN_SIZE;
+		arr_len = LIST_MIN_SIZE;
 		jobs = malloc(sizeof(struct job) * arr_len);
 		old = 1;
 		new = 1;
@@ -80,7 +80,7 @@ static size_t index(size_t pseudoindex)
 	}
 }
 
-static void queueGrow(void)
+static void listGrow(void)
 {
 	struct job *arrOld = jobs;
 	jobs = malloc(sizeof(struct job) * arr_len * 2);
@@ -97,22 +97,27 @@ static void queueGrow(void)
 	free(arrOld);
 }
 
-void queueEnqueue(struct job job)
+void listAdd(struct job job, bool isPriority)
 {
-	queueInitialize();
-	if (old == index(new + 1)) {	//queue is full
-		queueGrow();
+	listInitialize();
+	if (old == index(new + 1)) {	//list is full
+		listGrow();
 	}
-	jobs[new] = job;
-	new = index(new + 1);
+	if (isPriority) {
+		old = index(old-1);
+		jobs[old] = job;
+	} else {
+		jobs[new] = job;
+		new = index(new + 1);
+	}
 }
 
-size_t queueSize(void)
+size_t listSize(void)
 {
 	//subtract two because index zero and index new are empty
-	if (old <= new) {	// The queue is not wrapped
+	if (old <= new) {	// The list is not wrapped
 		return new - old;
-	} else {		//end of queue loops back to start of the array
+	} else {		//end of list loops back to start of the array
 		// the total number of cells in the array, if we ignore index 0
 		size_t num_cells = arr_len - 1;
 
@@ -124,10 +129,10 @@ size_t queueSize(void)
 	}
 }
 
-static inline void queueShrink(void)
+static inline void listShrink(void)
 {
 	size_t newSize = arr_len / 2;
-	if (newSize < QUEUE_MIN_SIZE) {
+	if (newSize < LIST_MIN_SIZE) {
 		return;
 	}
 
@@ -148,17 +153,17 @@ static inline void queueShrink(void)
 	free(arrOld);
 }
 
-struct job queueDequeue(void)
+struct job listNext(void)
 {
 	struct job job = jobs[old];
 	old = index(old + 1);
-	if (queueSize() < arr_len / 4) {
-		queueShrink();
+	if (listSize() < arr_len / 4) {
+		listShrink();
 	}
 	return job;
 }
 
-struct job queuePeek(void)
+struct job listPeek(void)
 {
 	return jobs[index(old)];
 }
