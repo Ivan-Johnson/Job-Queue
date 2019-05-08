@@ -34,8 +34,19 @@
 static struct job *jobs = NULL;
 static size_t arr_len = 0, old = 0, new = 0;
 
+static void listInitialize(void)
+{
+	if (jobs == NULL) {
+		arr_len = LIST_MIN_SIZE;
+		jobs = malloc(sizeof(struct job) * arr_len);
+		old = 1;
+		new = 1;
+	}
+}
+
 size_t listCurCapacity(void)
 {
+	listInitialize();
 	return arr_len - 2;
 }
 
@@ -48,16 +59,6 @@ void listFree(void)
 	arr_len = 0;
 	old = 1;
 	new = 1;
-}
-
-static inline void listInitialize(void)
-{
-	if (jobs == NULL) {
-		arr_len = LIST_MIN_SIZE;
-		jobs = malloc(sizeof(struct job) * arr_len);
-		old = 1;
-		new = 1;
-	}
 }
 
 /*
@@ -114,6 +115,7 @@ void listAdd(struct job job, bool isPriority)
 
 size_t listSize(void)
 {
+	listInitialize();
 	//subtract two because index zero and index new are empty
 	if (old <= new) {	// The list is not wrapped
 		return new - old;
