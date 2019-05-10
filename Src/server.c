@@ -357,7 +357,8 @@ int serverOpen(int dirFD, unsigned int numSlots, unsigned int port)
 	}
 	int strlen = snprintf(buf, PORT_CCHARS, "%d\n", this->port);
 	assert(0 < strlen && strlen < PORT_CCHARS);
-	write(fd, buf, (size_t) strlen); // TODO: check the return status -_-
+	ssize_t ret = write(fd, buf, (size_t) strlen);
+	assert(ret >= 0 && ret == strlen);
 	free(buf);
 	// TODO ASAP: change file referenced by fd to be read only
 	close(fd);
