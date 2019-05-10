@@ -43,11 +43,20 @@
 #define MAX_ENVAL_LEN 10000
 
 struct server {
-	int server;		// fd of the main server directory
-	int fifo;		// fd of the fifo file used to receive requests (RD_ONLY)
-	unsigned int port;	// the port that this server uses to communicate with clients
-	FILE *log;		// A file to use in place of the server's stdout
-	FILE *err;		// A file to use in place of the server's stderr
+	// fd of the main server directory
+	int server;
+
+	// fd of the fifo file used to receive requests (RD_ONLY)
+	int fifo;
+
+	// the port that this server uses to communicate with clients
+	unsigned int port;
+
+	// A file to use in place of the server's stdout
+	FILE *log;
+
+	// A file to use in place of the server's stderr
+	FILE *err;
 
 	unsigned int numSlots;
 
@@ -108,8 +117,7 @@ int serverShutdown(bool killRunning)
 {
 	(void)killRunning;
 	assert(this != NULL);
-	fprintf(this->err,
-		"Exiting abruptly, as graceful shutdowns are not yet implemented\n");
+	fprintf(this->err, "Doing \"graceful\" shutdown (actually unsafe)\n");
 	serverClose();
 	exit(1);
 	//TODO:
@@ -339,7 +347,8 @@ int serverOpen(int dirFD, unsigned int numSlots, unsigned int port)
 	if (fd < 0) {
 		return 1;
 	}
-	// TODO: do this intelligently (search for other instances of this problem; C-s 627)
+	// TODO: do this intelligently (search for other instances of this
+	// problem; C-s 627)
 	unsigned int numChars = 627;
 	char *buf = malloc(sizeof(char) * numChars);
 	if (buf == NULL) {
@@ -405,7 +414,8 @@ unsigned int serverGetPort(int serverdir)
 {
 	int fdPort = openat(serverdir, FPORT, O_RDONLY);
 
-	// TODO: do this intelligently (search for other instances of this problem; C-s 627)
+	// TODO: do this intelligently (search for other instances of this
+	// problem; C-s 627)
 	unsigned int numChars = 627;
 
 	char *buf = malloc(sizeof(char) * numChars);
