@@ -132,26 +132,6 @@ int serverShutdown(bool killRunning)
 	//return !serverRunning
 }
 
-// If there are no jobs to run, then this function returns JOB_ZEROS, otherwise
-// it returns the job that should be run next.
-//
-// This function shall never fail.
-//
-// The current thread MUST already have the mutex lock.
-static struct job getJob()
-{
-	struct job job;
-
-	job = listNext();
-	if (listSize() > 0) {
-		job = listNext();
-	} else {
-		job = JOB_ZEROS;
-	}
-
-	return job;
-}
-
 static int constructEnvval(size_t slotc, unsigned int *slotv, size_t buflen,
 			   char *buf)
 {
@@ -252,7 +232,7 @@ static void runJobs()
 	int fail;
 
 	while (1) {
-		struct job job = getJob();
+		struct job job = listNext();
 		if (jobEq(job, JOB_ZEROS)) {
 			break;
 		}
