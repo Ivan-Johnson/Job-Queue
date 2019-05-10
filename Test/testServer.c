@@ -3,7 +3,7 @@
  *
  * Tests the server
  *
- * Copyright(C) 2018, Ivan Tobias Johnson
+ * Copyright(C) 2018-2019, Ivan Tobias Johnson
  *
  * LICENSE: GPL 2.0
  */
