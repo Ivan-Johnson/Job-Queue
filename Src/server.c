@@ -35,12 +35,16 @@
 //
 // TODO why /aren't/ these part of the public interface? That way they could be
 // incorperated into the argp help documentation.
-#define LOG "log.txt"
-#define ERR "err.txt"
+#define FLOG "log.txt"
+#define FERR "err.txt"
 #define FPORT "port.txt"
 
 #define SLOT_ENVVAR "CUDA_VISIBLE_DEVICES"
 #define MAX_ENVAL_LEN 10000
+
+// The maximum number of chars in SERVER_FPORT. TODO: give this an actual value
+// instead of an over-estimate
+#define PORT_CCHARS 1024
 
 struct server {
 	// fd of the main server directory
@@ -346,24 +350,20 @@ int serverOpen(int dirFD, unsigned int numSlots, unsigned int port)
 	if (fd < 0) {
 		return 1;
 	}
-	// TODO: do this intelligently (search for other instances of this
-	// problem; C-s 627)
-	unsigned int numChars = 627;
-	char *buf = malloc(sizeof(char) * numChars);
+	char *buf = malloc(sizeof(char) * PORT_CCHARS);
 	if (buf == NULL) {
 		close(fd);
 		return 1;
 	}
-	snprintf(buf, numChars, "%d\n", this->port);
-	size_t strlen = strnlen(buf, numChars);
-	assert(strlen < numChars);
-	write(fd, buf, strlen);
+	int strlen = snprintf(buf, PORT_CCHARS, "%d\n", this->port);
+	assert(0 < strlen && strlen < PORT_CCHARS);
+	write(fd, buf, (size_t) strlen); // TODO: check the return status -_-
 	free(buf);
 	// TODO ASAP: change file referenced by fd to be read only
 	close(fd);
 
 	// log file
-	fd = openat(this->server, LOG, O_WRONLY | O_CREAT | O_CLOEXEC,
+	fd = openat(this->server, FLOG, O_WRONLY | O_CREAT | O_CLOEXEC,
 		    SERVER_DIR_PERMS);
 	if (fd < 0) {
 		serverClose();
@@ -378,7 +378,7 @@ int serverOpen(int dirFD, unsigned int numSlots, unsigned int port)
 	}
 
 	// err file
-	fd = openat(this->server, ERR, O_WRONLY | O_CREAT | O_CLOEXEC,
+	fd = openat(this->server, FERR, O_WRONLY | O_CREAT | O_CLOEXEC,
 		    SERVER_DIR_PERMS);
 	if (fd < 0) {
 		serverClose();
@@ -414,17 +414,13 @@ unsigned int serverGetPort(int serverdir)
 {
 	int fdPort = openat(serverdir, FPORT, O_RDONLY);
 
-	// TODO: do this intelligently (search for other instances of this
-	// problem; C-s 627)
-	unsigned int numChars = 627;
-
-	char *buf = malloc(sizeof(char) * numChars);
+	char *buf = malloc(sizeof(char) * PORT_CCHARS);
 	if (buf == NULL) {
 		return 0;
 	}
 
-	ssize_t s = read(fdPort, buf, numChars);
-	if (s <= 0 || s == numChars) {
+	ssize_t s = read(fdPort, buf, PORT_CCHARS);
+	if (s <= 0 || s == PORT_CCHARS) {
 		free(buf);
 		return 0;
 	}
