@@ -120,6 +120,13 @@ void *messengerReader(void *srvr)
 	struct messengerReaderArgs args = *((struct messengerReaderArgs *)srvr);
 	fprintf(args.log, "Messenger is initializing\n");
 	fflush(args.log);
+
+	int port = serverGetPort(args.server);
+	assert(port > 0);
+	fprintf(args.log, "Messenger given port %d\n", port);
+	(void) port; // TODO
+
+
 	int fifo_read = openat(args.server, SFILE_FIFO,
 			       O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 	if (fifo_read == -1) {
@@ -130,8 +137,9 @@ void *messengerReader(void *srvr)
 	}
 	fprintf(args.log,
 		"Messenger successfully opened the fifo for reading\n");
-	fflush(args.log);
 
+
+	fflush(args.log);
 	while (1) {
 		sleep(1);	//TODO use pselect or something?
 		processFIFO(fifo_read, args.log, args.err);
