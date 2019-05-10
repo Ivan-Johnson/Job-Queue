@@ -352,6 +352,7 @@ int serverOpen(int dirFD, unsigned int numSlots, unsigned int port)
 	unsigned int numChars = 627;
 	char *buf = malloc(sizeof(char) * numChars);
 	if (buf == NULL) {
+		close(fd);
 		return 1;
 	}
 	snprintf(buf, numChars, "%d\n", this->port);
