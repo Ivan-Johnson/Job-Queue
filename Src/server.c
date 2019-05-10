@@ -342,8 +342,7 @@ int serverOpen(int dirFD, unsigned int numSlots, unsigned int port)
 
 	int fd;
 
-	fd = openat(dirFD, FPORT, O_WRONLY | O_CREAT | O_CLOEXEC,
-		SERVER_DIR_PERMS);
+	fd = openat(dirFD, FPORT, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
 	if (fd < 0) {
 		return 1;
 	}
