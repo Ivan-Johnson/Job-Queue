@@ -45,8 +45,9 @@ void testPortFile()
 	fail = serverOpen(sFD, 3, port);
 	TEST_ASSERT_EQUAL_INT(0, fail);
 
-	unsigned int foundPort = serverGetPort(sFD);
+	int foundPort = serverGetPort(sFD);
 	serverClose();
 
+	TEST_ASSERT_TRUE(foundPort > 0);
 	TEST_ASSERT_EQUAL_INT(port, foundPort);
 }

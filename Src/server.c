@@ -411,9 +411,10 @@ int serverOpen(int dirFD, unsigned int numSlots, unsigned int port)
 	return 0;
 }
 
-unsigned int serverGetPort(int serverdir)
+int serverGetPort(int serverdir)
 {
 	int fdPort = openat(serverdir, FPORT, O_RDONLY);
+	int ret;
 
 	char *buf = malloc(sizeof(char) * PORT_CCHARS);
 	if (buf == NULL) {
@@ -422,18 +423,20 @@ unsigned int serverGetPort(int serverdir)
 
 	ssize_t s = read(fdPort, buf, PORT_CCHARS);
 	if (s <= 0 || s == PORT_CCHARS) {
-		free(buf);
-		return 0;
+		ret = -1;
+		goto fin;
 	}
 
 	long l = atol(buf);
-	if (l <= 0 || l > UINT_MAX) {
-		free(buf);
-		return 0;
+	if (l <= 0 || INT_MAX < l) {
+		ret = -1;
+		goto fin;
 	}
 
+	ret = (int) l;
+fin:
 	free(buf);
-	return (unsigned int) l;
+	return ret;
 }
 
 int serverForkNew(int fd, unsigned int numSlots, unsigned int port)

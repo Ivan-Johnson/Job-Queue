@@ -34,9 +34,8 @@ int serverShutdown(bool killRunning);
 int getServerDir(const char *path);
 
 // Given a file descriptor of the server's main directory, returns the port
-// number that the server is on. The port is always positive. Returns zero on
-// error.
-unsigned int serverGetPort(int dirFD);
+// number that the server is on. Returns a negative number on error.
+int serverGetPort(int dirFD);
 
 //TODO change fdServer to just be a path, then remove getServerDir.
 //
