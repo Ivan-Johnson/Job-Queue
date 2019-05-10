@@ -354,7 +354,7 @@ int serverOpen(int dirFD, unsigned int numSlots, unsigned int port)
 	if (buf == NULL) {
 		return 1;
 	}
-	snprintf(buf, numChars, "%d", this->port);
+	snprintf(buf, numChars, "%d\n", this->port);
 	size_t strlen = strnlen(buf, numChars);
 	assert(strlen < numChars);
 	write(fd, buf, strlen);
