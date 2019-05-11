@@ -24,7 +24,7 @@
 #define OPTION_SLOTSUSE 'c'
 #define OPTION_PORT 'o'
 
-#define DEFAULT_PORT 417784
+#define DEFAULT_PORT 22943
 #define DEFAULT_PORT_STR "417784"
 
 const char *argp_program_version =
