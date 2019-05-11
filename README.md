@@ -1,4 +1,4 @@
-Jörmungandr
+# Jörmungandr
 
 Jörmungandr (a.k.a. Jormungandr) is a project for scheduling a queue of tasks
 onto a limited set of devices.
@@ -16,7 +16,7 @@ command will be placed at the front of the queue instead of the back.
 
 
 
-Getting Setup for Development
+## Getting Setup for Development
 
 Add git hooks: git config core.hooksPath ./Scripts/GitHooks/
 
