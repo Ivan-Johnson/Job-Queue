@@ -3,7 +3,7 @@
  *
  * implements Src/server.h
  *
- * Copyright(C) 2018, Ivan Tobias Johnson
+ * Copyright(C) 2018-2019, Ivan Tobias Johnson
  *
  * LICENSE: GPL 2.0
  */
@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -24,34 +25,85 @@
 #include <unistd.h>
 
 #include "job.h"
-#include "queue.h"
+#include "tasklist.h"
 #include "server.h"
-#include "stack.h"
 #include "slots.h"
+#include "messenger.h"
 
-//TODO make these names consistent with SFILE_FIFO? or maybe not, because these
-//are not part of the public interface.
-#define LOG "log.txt"
-#define ERR "err.txt"
+// TODO why aren't these part of the public interface? That way they could be
+// incorperated into the argp help documentation. If so, they should probably be
+// renamed to something like "SERVER_FLOG" or "SFILE_LOG".
+#define FLOG "log.txt"
+#define FERR "err.txt"
+#define FPORT "port.txt"
 
 #define SLOT_ENVVAR "CUDA_VISIBLE_DEVICES"
 #define MAX_ENVAL_LEN 10000
 
+// The maximum number of chars in SERVER_FPORT. TODO: give this an actual value
+// instead of an over-estimate
+#define PORT_CCHARS 1024
+
+struct server {
+	// fd of the main server directory
+	int server;
+
+	// the port that this server uses to communicate with clients
+	unsigned int port;
+
+	// A file to use in place of the server's stdout
+	FILE *log;
+
+	// A file to use in place of the server's stderr
+	FILE *err;
+
+	unsigned int numSlots;
+
+	// buffer for the EXCLUSIVE use of the server thread
+	// guaranteed have a length of at least numSlots
+	unsigned int *slotBuff;
+};
+
+static struct server concrete;
 static struct server *this = NULL;
-static pthread_mutex_t lock;
+
+static struct server serverInitialize(void)
+{
+	struct server s;
+	s.log = NULL;
+	s.err = NULL;
+	s.server = -1;
+	s.port = 0;
+	s.numSlots = 0;
+	s.slotBuff = NULL;
+	return s;
+}
+
+void serverClose()
+{
+	if (this == NULL) {
+		return;
+	}
+
+	if (this->log) {
+		fclose(this->log);
+	}
+	if (this->err) {
+		fclose(this->err);
+	}
+	if (this->server != -1) {
+		close(this->server);
+	}
+	if (this->slotBuff) {
+		free(this->slotBuff);
+	}
+
+	this = NULL;
+}
 
 int serverAddJob(struct job job)
 {
-	int fail;
-	fail = pthread_mutex_lock(&lock);
-	assert(!fail);
-	if (job.priority) {
-		stackPush(job);
-	} else {
-		queueEnqueue(job);
-	}
-	fail = pthread_mutex_unlock(&lock);
-	assert(!fail);
+	listAdd(job, job.priority);
 	//TODO wake server thread
 	return 0;
 }
@@ -60,9 +112,8 @@ int serverShutdown(bool killRunning)
 {
 	(void)killRunning;
 	assert(this != NULL);
-	fprintf(this->err,
-		"Exiting abruptly, as graceful shutdowns are not yet implemented\n");
-	serverClose(*this);
+	fprintf(this->err, "Doing \"graceful\" shutdown (actually unsafe)\n");
+	serverClose();
 	exit(1);
 	//TODO:
 	//assert that server is running
@@ -70,31 +121,6 @@ int serverShutdown(bool killRunning)
 	//wake server
 	//sleep? wait? idk.
 	//return !serverRunning
-}
-
-// If there are no jobs to run, then this function returns JOB_ZEROS, otherwise
-// it returns the job that should be run next.
-//
-// This function shall never fail.
-//
-// The current thread MUST already have the mutex lock.
-static struct job getJob()
-{
-	struct job job;
-	int fail;
-
-	fail = pthread_mutex_lock(&lock);
-	assert(fail == EDEADLK);
-
-	if (stackSize() > 0) {
-		job = stackPop();
-	} else if (queueSize() > 0) {
-		job = queueDequeue();
-	} else {
-		job = JOB_ZEROS;
-	}
-
-	return job;
 }
 
 static int constructEnvval(size_t slotc, unsigned int *slotv, size_t buflen,
@@ -123,6 +149,7 @@ static int constructEnvval(size_t slotc, unsigned int *slotv, size_t buflen,
 
 static int runJob(struct job job)
 {
+	assert(this);
 	unsigned int numslot = job.slots;
 	assert(slotsAvailible() >= numslot);
 
@@ -195,17 +222,14 @@ static void runJobs()
 {
 	int fail;
 
-	fail = pthread_mutex_lock(&lock);
-	assert(!fail);
-
 	while (1) {
-		struct job job = getJob();
+		struct job job = listNext();
 		if (jobEq(job, JOB_ZEROS)) {
 			break;
 		}
 
 		if (slotsAvailible() < job.slots) {
-			stackPush(job);
+			listAdd(job, true);
 			break;
 		}
 
@@ -220,9 +244,6 @@ static void runJobs()
 		}
 		freeJobClone(job);
 	}
-
-	fail = pthread_mutex_unlock(&lock);
-	assert(!fail);
 }
 
 __attribute__((noreturn))
@@ -230,31 +251,21 @@ void serverMain(void *srvr)
 {
 	this = srvr;
 	assert(this->numSlots > 0);
-	pthread_mutexattr_t attr;
-	if (pthread_mutexattr_init(&attr)) {
-		fprintf(this->err, "Could not initialize mutexattr\n");
-		exit(1);
-	}
-	if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK)) {
-		fprintf(this->err, "Could not set mutexattr to errorcheck\n");
-		exit(1);
-	}
-	if (pthread_mutex_init(&lock, &attr)) {
-		fprintf(this->err, "Could not initialize mutex\n");
-		exit(1);
-	}
 	int fail = slotsMalloc(this->numSlots);
 	if (fail) {
 		fprintf(this->err, "Could not initialize slots module\n");
 		exit(1);
 	}
 
+	fail = listInitialize();
+	assert(!fail);
+
 	while (1) {
 		fflush(this->log);
 		sleep(3);
 		monitorChildren();
-		fprintf(this->log, "Queue: %zd; Stack: %zd; free slots: %u\n",
-			queueSize(), stackSize(), slotsAvailible());
+		fprintf(this->log, "tasks: %zd; free slots: %u\n",
+			listSize(), slotsAvailible());
 
 		runJobs();
 	}
@@ -287,81 +298,148 @@ int getServerDir(const char *path)
 	return fd;
 }
 
-static struct server serverInitialize(void)
-{
-	struct server s;
-	s.log = NULL;
-	s.err = NULL;
-	s.server = -1;
-	s.fifo = -1;
-	s.numSlots = 0;
-	s.slotBuff = NULL;
-	return s;
-}
-
-void serverClose(struct server s)
-{
-	if (s.log) {
-		fclose(s.log);
-	}
-	if (s.err) {
-		fclose(s.err);
-	}
-	if (s.fifo != -1) {
-		close(s.fifo);
-	}
-	if (s.server != -1) {
-		close(s.server);
-	}
-	if (s.slotBuff) {
-		free(s.slotBuff);
-	}
-}
-
-int openServer(int dirFD, struct server *s, unsigned int numSlots)
+/*
+ * Attempts to initialize s in preparation for launching a server.
+ *
+ * Returns 0 on success, nonzero on failure
+ *
+ * numSlots > 0
+ */
+int serverOpen(int dirFD, unsigned int numSlots, unsigned int port)
 {
 	assert(numSlots > 0);
-	*s = serverInitialize();
-	s->server = dirFD;
-	s->numSlots = numSlots;
+	concrete = serverInitialize();
+	this = &concrete;
+
+	this->server = dirFD;
+	this->numSlots = numSlots;
+	this->port = port;
 
 	int fd;
-	fd = openat(s->server, LOG, O_WRONLY | O_CREAT | O_CLOEXEC,
+
+	fd = openat(dirFD, FPORT, O_WRONLY | O_CREAT, SERVER_DIR_PERMS);
+	if (fd < 0) {
+		return 1;
+	}
+	char *buf = malloc(sizeof(char) * PORT_CCHARS);
+	if (buf == NULL) {
+		close(fd);
+		return 1;
+	}
+	int strlen = snprintf(buf, PORT_CCHARS, "%d\n", this->port);
+	assert(0 < strlen && strlen < PORT_CCHARS);
+	ssize_t ret = write(fd, buf, (size_t) strlen);
+	assert(ret >= 0 && ret == strlen);
+	free(buf);
+	// TODO ASAP: change file referenced by fd to be read only
+	close(fd);
+
+	// log file
+	fd = openat(this->server, FLOG, O_WRONLY | O_CREAT | O_CLOEXEC,
 		    SERVER_DIR_PERMS);
 	if (fd < 0) {
-		serverClose(*s);
+		serverClose();
 		return 1;
 	}
-	s->log = fdopen(fd, "a");
-	if (!s->log) {
-		serverClose(*s);
+	// TODO: why is this (and ERR) being opened a second time? Can the
+	// append mode not be done with the initial openat?
+	this->log = fdopen(fd, "a");
+	if (!this->log) {
+		serverClose();
 		return 1;
 	}
-	fd = openat(s->server, ERR, O_WRONLY | O_CREAT | O_CLOEXEC,
+
+	// err file
+	fd = openat(this->server, FERR, O_WRONLY | O_CREAT | O_CLOEXEC,
 		    SERVER_DIR_PERMS);
 	if (fd < 0) {
-		serverClose(*s);
+		serverClose();
 		return 1;
 	}
-	s->err = fdopen(fd, "a");
-	if (!s->err) {
-		serverClose(*s);
+	this->err = fdopen(fd, "a");
+	if (!this->err) {
+		serverClose();
 		return 1;
 	}
-	s->slotBuff = malloc(sizeof(unsigned int) * s->numSlots);
-	if (!s->slotBuff) {
-		serverClose(*s);
+
+	// slotBuff
+	this->slotBuff = malloc(sizeof(unsigned int) * this->numSlots);
+	if (!this->slotBuff) {
+		serverClose();
 		return 1;
 	}
-	//TODO when *launching* the server, we reader creates its own fd. When
-	//scheduling a command, we don't even call this function. So we don't
-	//actually need a fifo fd in server, do we?
-	mkfifoat(s->server, SFILE_FIFO, SERVER_DIR_PERMS);
-	s->fifo = openat(s->server, SFILE_FIFO,
-			 O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-	if (s->fifo < 0) {
-		serverClose(*s);
-		return 1;
-	}
+
 	return 0;
+}
+
+int serverGetPort(int serverdir)
+{
+	int fdPort = openat(serverdir, FPORT, O_RDONLY);
+	int ret;
+
+	char *buf = malloc(sizeof(char) * PORT_CCHARS);
+	if (buf == NULL) {
+		return 0;
+	}
+
+	ssize_t s = read(fdPort, buf, PORT_CCHARS);
+	if (s <= 0 || s == PORT_CCHARS) {
+		ret = -1;
+		goto fin;
+	}
+
+	long l = atol(buf);
+	if (l <= 0 || INT_MAX < l) {
+		ret = -1;
+		goto fin;
+	}
+
+	ret = (int) l;
+fin:
+	free(buf);
+	return ret;
+}
+
+int serverForkNew(int fd, unsigned int numSlots, unsigned int port)
+{
+	if (numSlots == 0) {
+		numSlots = 1;
+	}
+	int status;
+	status = serverOpen(fd, numSlots, port);
+	if (status) {
+		return 1;
+	}
+
+	int pid = fork();
+	if (pid == -1) {
+		puts("Failed to fork a server");
+		serverClose();
+		return 1;
+	} else if (pid != 0) {
+		puts("Successfully forked a server");
+		serverClose();
+		return 0;
+	}
+
+	status = setsid();
+	if (status == -1) {
+		fprintf(this->err, "Failed to setsid: %s\n", strerror(errno));
+		exit(1);
+	}
+
+	struct messengerReaderArgs args;
+	args.log = this->log;
+	args.err = this->err;
+	args.server = this->server;
+	pthread_t unused;
+	status =
+	    pthread_create(&unused, NULL, messengerReader, (void *)&args);
+	if (status) {
+		fprintf(this->err, "Failed to start reader thread: %s\n",
+			strerror(status));
+		exit(1);
+	}
+
+	serverMain((void *)&concrete);
 }

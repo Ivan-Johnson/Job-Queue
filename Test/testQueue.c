@@ -1,13 +1,13 @@
 /*
  * Test/testQueue.c
  *
- * Tests the job queue
+ * Tests if tasklist can function as a queue.
  *
- * Copyright(C) 2018, Ivan Tobias Johnson
+ * Copyright(C) 2018-2019, Ivan Tobias Johnson
  *
  * LICENSE: GPL 2.0
  */
-#include "queue.h"
+#include "tasklist.h"
 
 #include <unity.h>
 
@@ -30,13 +30,15 @@ struct job jobs[ARR_LEN];
 
 void setUp()
 {
-	TEST_ASSERT_EQUAL_INT(0, queueSize());
-	//advances the queue indicies to near the end of the length 128 array
+	listInitialize();
+
+	TEST_ASSERT_EQUAL_INT(0, listSize());
+	//advances the list indicies to near the end of the length 128 array
 	for (int x = 0; x < 125; x++) {
-		queueEnqueue(job0);
-		queueDequeue();
+		listAdd(job0, false);
+		listNext();
 	}
-	TEST_ASSERT_EQUAL_INT(0, queueSize());
+	TEST_ASSERT_EQUAL_INT(0, listSize());
 
 	jobs[0] = job1;
 	jobs[1] = job2;
@@ -47,41 +49,40 @@ void setUp()
 
 void tearDown()
 {
-	queueFree();
-	TEST_ASSERT_EQUAL_INT(0, queueSize());
+	listFree();
 }
 
 /*
- * Test the queue's ability to track its size while performing trivial
+ * Test the list's ability to track its size while performing trivial
  * operations
  */
 void testSize0()
 {
-	TEST_ASSERT_EQUAL_INT(0, queueSize());
-	queueEnqueue(job0);
-	TEST_ASSERT_EQUAL_INT(1, queueSize());
-	queueEnqueue(job0);
-	TEST_ASSERT_EQUAL_INT(2, queueSize());
-	queueDequeue();
-	TEST_ASSERT_EQUAL_INT(1, queueSize());
-	queueEnqueue(job0);
-	TEST_ASSERT_EQUAL_INT(2, queueSize());
-	queueEnqueue(job0);
-	TEST_ASSERT_EQUAL_INT(3, queueSize());
-	queueDequeue();
-	TEST_ASSERT_EQUAL_INT(2, queueSize());
-	queueDequeue();
-	TEST_ASSERT_EQUAL_INT(1, queueSize());
-	queueDequeue();
-	TEST_ASSERT_EQUAL_INT(0, queueSize());
-	queueEnqueue(job0);
-	TEST_ASSERT_EQUAL_INT(1, queueSize());
-	queueEnqueue(job0);
-	TEST_ASSERT_EQUAL_INT(2, queueSize());
-	queueDequeue();
-	TEST_ASSERT_EQUAL_INT(1, queueSize());
-	queueDequeue();
-	TEST_ASSERT_EQUAL_INT(0, queueSize());
+	TEST_ASSERT_EQUAL_INT(0, listSize());
+	listAdd(job0, false);
+	TEST_ASSERT_EQUAL_INT(1, listSize());
+	listAdd(job0, false);
+	TEST_ASSERT_EQUAL_INT(2, listSize());
+	listNext();
+	TEST_ASSERT_EQUAL_INT(1, listSize());
+	listAdd(job0, false);
+	TEST_ASSERT_EQUAL_INT(2, listSize());
+	listAdd(job0, false);
+	TEST_ASSERT_EQUAL_INT(3, listSize());
+	listNext();
+	TEST_ASSERT_EQUAL_INT(2, listSize());
+	listNext();
+	TEST_ASSERT_EQUAL_INT(1, listSize());
+	listNext();
+	TEST_ASSERT_EQUAL_INT(0, listSize());
+	listAdd(job0, false);
+	TEST_ASSERT_EQUAL_INT(1, listSize());
+	listAdd(job0, false);
+	TEST_ASSERT_EQUAL_INT(2, listSize());
+	listNext();
+	TEST_ASSERT_EQUAL_INT(1, listSize());
+	listNext();
+	TEST_ASSERT_EQUAL_INT(0, listSize());
 }
 
 /*
@@ -90,15 +91,15 @@ void testSize0()
 void testPeek0()
 {
 	for (size_t x = 0; x < ARR_LEN; x++) {
-		queueEnqueue(jobs[x]);
-		TEST_ASSERT_TRUE(jobEq(queuePeek(), jobs[0]));
+		listAdd(jobs[x], false);
+		TEST_ASSERT_TRUE(jobEq(listPeek(), jobs[0]));
 	}
-	TEST_ASSERT_EQUAL_INT(ARR_LEN, queueSize());
+	TEST_ASSERT_EQUAL_INT(ARR_LEN, listSize());
 	for (size_t x = 0; x < ARR_LEN; x++) {
-		TEST_ASSERT_TRUE(jobEq(queuePeek(), jobs[x]));
-		queueDequeue();
+		TEST_ASSERT_TRUE(jobEq(listPeek(), jobs[x]));
+		listNext();
 	}
-	TEST_ASSERT_EQUAL_INT(0, queueSize());
+	TEST_ASSERT_EQUAL_INT(0, listSize());
 }
 
 /*
@@ -107,13 +108,13 @@ void testPeek0()
 void testDequeue()
 {
 	for (size_t x = 0; x < ARR_LEN; x++) {
-		queueEnqueue(jobs[x]);
+		listAdd(jobs[x], false);
 	}
-	TEST_ASSERT_EQUAL_INT(ARR_LEN, queueSize());
+	TEST_ASSERT_EQUAL_INT(ARR_LEN, listSize());
 	for (size_t x = 0; x < ARR_LEN; x++) {
-		TEST_ASSERT_TRUE(jobEq(queueDequeue(), jobs[x]));
+		TEST_ASSERT_TRUE(jobEq(listNext(), jobs[x]));
 	}
-	TEST_ASSERT_EQUAL_INT(0, queueSize());
+	TEST_ASSERT_EQUAL_INT(0, listSize());
 }
 
 /*
@@ -121,8 +122,8 @@ void testDequeue()
  */
 void testGrow()
 {
-	TEST_ASSERT_EQUAL_INT(0, queueSize());
-	size_t cap = queueCurCapacity();
+	TEST_ASSERT_EQUAL_INT(0, listSize());
+	size_t cap = listCurCapacity();
 
 #define JOBC 300
 	TEST_ASSERT_TRUE(JOBC > cap + 5);
@@ -134,33 +135,33 @@ void testGrow()
 	}
 
 	for (size_t x = 0; x < cap - 2; x++) {
-		queueEnqueue(jobs[x]);
+		listAdd(jobs[x], false);
 	}
 
-	queueEnqueue(jobs[cap-2]);
-	queueEnqueue(jobs[cap-1]);
+	listAdd(jobs[cap-2], false);
+	listAdd(jobs[cap-1], false);
 
 	//Queue is now at capacity
-	TEST_ASSERT_EQUAL_INT(cap, queueSize());
-	TEST_ASSERT_EQUAL_INT(cap, queueCurCapacity());
+	TEST_ASSERT_EQUAL_INT(cap, listSize());
+	TEST_ASSERT_EQUAL_INT(cap, listCurCapacity());
 	//grow the queue
-	queueEnqueue(jobs[cap]);
-	TEST_ASSERT_TRUE(cap < queueCurCapacity());
-	TEST_ASSERT_EQUAL_INT(cap+1, queueSize());
+	listAdd(jobs[cap], false);
+	TEST_ASSERT_TRUE(cap < listCurCapacity());
+	TEST_ASSERT_EQUAL_INT(cap+1, listSize());
 
-	queueEnqueue(jobs[cap+1]);
-	queueEnqueue(jobs[cap+2]);
-	queueEnqueue(jobs[cap+3]);
+	listAdd(jobs[cap+1], false);
+	listAdd(jobs[cap+2], false);
+	listAdd(jobs[cap+3], false);
 	//confirm that the queue waits before shrinking
 	for(size_t x = 0; x < 10; x++) {
-		TEST_ASSERT_TRUE(jobEq(jobs[x], queueDequeue()));
-		TEST_ASSERT_TRUE(cap < queueCurCapacity());
+		TEST_ASSERT_TRUE(jobEq(jobs[x], listNext()));
+		TEST_ASSERT_TRUE(cap < listCurCapacity());
 	}
 	//dequeue until we get to
 	for(size_t x = 10; x <= cap + 3; x++) {
-		TEST_ASSERT_TRUE(jobEq(jobs[x], queueDequeue()));
+		TEST_ASSERT_TRUE(jobEq(jobs[x], listNext()));
 	}
-	TEST_ASSERT_EQUAL_INT(0, queueSize());
+	TEST_ASSERT_EQUAL_INT(0, listSize());
 #undef JOBC
 }
 
@@ -169,8 +170,8 @@ void testGrow()
  */
 void testShrinkage()
 {
-	TEST_ASSERT_EQUAL_INT(0, queueSize());
-	size_t cap = queueCurCapacity();
+	TEST_ASSERT_EQUAL_INT(0, listSize());
+	size_t cap = listCurCapacity();
 
 #define JOBC 300
 	TEST_ASSERT_TRUE(JOBC > cap + 5);
@@ -182,18 +183,18 @@ void testShrinkage()
 	}
 
 	for (size_t x = 0; x <= cap; x++) {
-		queueEnqueue(jobs[x]);
+		listAdd(jobs[x], false);
 	}
-	TEST_ASSERT_TRUE(cap < queueCurCapacity());
-	TEST_ASSERT_EQUAL_INT(cap+1, queueSize());
+	TEST_ASSERT_TRUE(cap < listCurCapacity());
+	TEST_ASSERT_EQUAL_INT(cap+1, listSize());
 
 	for (size_t x = 0; x <= cap; x++) {
-		TEST_ASSERT_TRUE(jobEq(jobs[x], queueDequeue()));
+		TEST_ASSERT_TRUE(jobEq(jobs[x], listNext()));
 	}
-	TEST_ASSERT_EQUAL_INT(0, queueSize());
+	TEST_ASSERT_EQUAL_INT(0, listSize());
 	// NOTE: the queue's default size is it's minimum size;
 	// so even though it's not storying anything right now,
 	// it should not have shrunk below it's origional size.
-	TEST_ASSERT_TRUE(cap == queueCurCapacity());
+	TEST_ASSERT_TRUE(cap == listCurCapacity());
 #undef JOBC
 }
