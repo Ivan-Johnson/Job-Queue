@@ -30,11 +30,9 @@
 #include "slots.h"
 #include "messenger.h"
 
-// TODO make these names consistent with SFILE_FIFO? or maybe not, because these
-// are not part of the public interface.
-//
-// TODO why /aren't/ these part of the public interface? That way they could be
-// incorperated into the argp help documentation.
+// TODO why aren't these part of the public interface? That way they could be
+// incorperated into the argp help documentation. If so, they should probably be
+// renamed to something like "SERVER_FLOG" or "SFILE_LOG".
 #define FLOG "log.txt"
 #define FERR "err.txt"
 #define FPORT "port.txt"
@@ -49,9 +47,6 @@
 struct server {
 	// fd of the main server directory
 	int server;
-
-	// fd of the fifo file used to receive requests (RD_ONLY)
-	int fifo;
 
 	// the port that this server uses to communicate with clients
 	unsigned int port;
@@ -79,7 +74,6 @@ static struct server serverInitialize(void)
 	s.err = NULL;
 	s.server = -1;
 	s.port = 0;
-	s.fifo = -1;
 	s.numSlots = 0;
 	s.slotBuff = NULL;
 	return s;
@@ -96,9 +90,6 @@ void serverClose()
 	}
 	if (this->err) {
 		fclose(this->err);
-	}
-	if (this->fifo != -1) {
-		close(this->fifo);
 	}
 	if (this->server != -1) {
 		close(this->server);
@@ -378,16 +369,6 @@ int serverOpen(int dirFD, unsigned int numSlots, unsigned int port)
 		return 1;
 	}
 
-	//TODO when *launching* the server, the reader creates its own fd. When
-	//scheduling a command, we don't even call this function. So we don't
-	//actually need a fifo fd in server, do we?
-	mkfifoat(this->server, SFILE_FIFO, SERVER_DIR_PERMS);
-	this->fifo = openat(this->server, SFILE_FIFO,
-			 O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-	if (this->fifo < 0) {
-		serverClose();
-		return 1;
-	}
 	return 0;
 }
 

@@ -16,9 +16,6 @@
 
 #include "job.h"
 
-//a fifo file that exists in serverdir. As long as the server is running, this
-//fifo will be opened for reading.
-#define SFILE_FIFO "fifo"
 #define SERVER_DIR_PERMS 0700
 
 void serverMain(void *srvr) __attribute__((noreturn));
