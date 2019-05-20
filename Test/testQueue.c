@@ -30,13 +30,15 @@ struct job jobs[ARR_LEN];
 
 void setUp()
 {
+	struct job job;
 	listInitialize();
 
 	TEST_ASSERT_EQUAL_INT(0, listSize());
 	//advances the list indicies to near the end of the length 128 array
 	for (int x = 0; x < 125; x++) {
 		listAdd(job0, false);
-		listNext();
+		TEST_ASSERT_FALSE(listNext(&job));
+		TEST_ASSERT_TRUE(jobEq(job, job0));
 	}
 	TEST_ASSERT_EQUAL_INT(0, listSize());
 
@@ -63,25 +65,25 @@ void testSize0()
 	TEST_ASSERT_EQUAL_INT(1, listSize());
 	listAdd(job0, false);
 	TEST_ASSERT_EQUAL_INT(2, listSize());
-	listNext();
+	listNext(NULL);
 	TEST_ASSERT_EQUAL_INT(1, listSize());
 	listAdd(job0, false);
 	TEST_ASSERT_EQUAL_INT(2, listSize());
 	listAdd(job0, false);
 	TEST_ASSERT_EQUAL_INT(3, listSize());
-	listNext();
+	listNext(NULL);
 	TEST_ASSERT_EQUAL_INT(2, listSize());
-	listNext();
+	listNext(NULL);
 	TEST_ASSERT_EQUAL_INT(1, listSize());
-	listNext();
+	listNext(NULL);
 	TEST_ASSERT_EQUAL_INT(0, listSize());
 	listAdd(job0, false);
 	TEST_ASSERT_EQUAL_INT(1, listSize());
 	listAdd(job0, false);
 	TEST_ASSERT_EQUAL_INT(2, listSize());
-	listNext();
+	listNext(NULL);
 	TEST_ASSERT_EQUAL_INT(1, listSize());
-	listNext();
+	listNext(NULL);
 	TEST_ASSERT_EQUAL_INT(0, listSize());
 }
 
@@ -90,14 +92,17 @@ void testSize0()
  */
 void testPeek0()
 {
+	struct job job;
 	for (size_t x = 0; x < ARR_LEN; x++) {
 		listAdd(jobs[x], false);
-		TEST_ASSERT_TRUE(jobEq(listPeek(), jobs[0]));
+		TEST_ASSERT_FALSE(listPeek(&job));
+		TEST_ASSERT_TRUE(jobEq(job, jobs[0]));
 	}
 	TEST_ASSERT_EQUAL_INT(ARR_LEN, listSize());
 	for (size_t x = 0; x < ARR_LEN; x++) {
-		TEST_ASSERT_TRUE(jobEq(listPeek(), jobs[x]));
-		listNext();
+		TEST_ASSERT_FALSE(listPeek(&job));
+		TEST_ASSERT_TRUE(jobEq(job, jobs[x]));
+		listNext(NULL);
 	}
 	TEST_ASSERT_EQUAL_INT(0, listSize());
 }
@@ -107,12 +112,14 @@ void testPeek0()
  */
 void testDequeue()
 {
+	struct job job;
 	for (size_t x = 0; x < ARR_LEN; x++) {
 		listAdd(jobs[x], false);
 	}
 	TEST_ASSERT_EQUAL_INT(ARR_LEN, listSize());
 	for (size_t x = 0; x < ARR_LEN; x++) {
-		TEST_ASSERT_TRUE(jobEq(listNext(), jobs[x]));
+		TEST_ASSERT_FALSE(listNext(&job));
+		TEST_ASSERT_TRUE(jobEq(job, jobs[x]));
 	}
 	TEST_ASSERT_EQUAL_INT(0, listSize());
 }
@@ -122,6 +129,8 @@ void testDequeue()
  */
 void testGrow()
 {
+	struct job job;
+
 	TEST_ASSERT_EQUAL_INT(0, listSize());
 	size_t cap = listCurCapacity();
 
@@ -154,12 +163,14 @@ void testGrow()
 	listAdd(jobs[cap+3], false);
 	//confirm that the queue waits before shrinking
 	for(size_t x = 0; x < 10; x++) {
-		TEST_ASSERT_TRUE(jobEq(jobs[x], listNext()));
+		TEST_ASSERT_FALSE(listNext(&job));
+		TEST_ASSERT_TRUE(jobEq(job, jobs[x]));
 		TEST_ASSERT_TRUE(cap < listCurCapacity());
 	}
 	//dequeue until we get to
 	for(size_t x = 10; x <= cap + 3; x++) {
-		TEST_ASSERT_TRUE(jobEq(jobs[x], listNext()));
+		TEST_ASSERT_FALSE(listNext(&job));
+		TEST_ASSERT_TRUE(jobEq(job, jobs[x]));
 	}
 	TEST_ASSERT_EQUAL_INT(0, listSize());
 #undef JOBC
@@ -170,6 +181,8 @@ void testGrow()
  */
 void testShrinkage()
 {
+	struct job job;
+
 	TEST_ASSERT_EQUAL_INT(0, listSize());
 	size_t cap = listCurCapacity();
 
@@ -189,7 +202,8 @@ void testShrinkage()
 	TEST_ASSERT_EQUAL_INT(cap+1, listSize());
 
 	for (size_t x = 0; x <= cap; x++) {
-		TEST_ASSERT_TRUE(jobEq(jobs[x], listNext()));
+		TEST_ASSERT_FALSE(listNext(&job));
+		TEST_ASSERT_TRUE(jobEq(job, jobs[x]));
 	}
 	TEST_ASSERT_EQUAL_INT(0, listSize());
 	// NOTE: the queue's default size is it's minimum size;

@@ -192,30 +192,40 @@ static inline void listShrink(void)
 	free(arrOld);
 }
 
-struct job listNext(void)
+int listNext(struct job *out)
 {
 	assert(jobs != NULL);
 	assert(!pthread_mutex_lock(&listMutex));
 
-	struct job job;
+	int ret = 0;
 	if (old == new) {
-		job = JOB_ZEROS;
-	} else {
-		job = jobs[old];
-		old = index(old + 1);
-		if (computeSize() < arr_len / 4) {
-			listShrink();
-		}
+		ret = 1;
+		goto fin;
 	}
+	if (out != NULL) {
+		*out = jobs[old];
+	}
+	old = index(old + 1);
+	if (computeSize() < arr_len / 4) {
+		listShrink();
+	}
+fin:
 	assert(!pthread_mutex_unlock(&listMutex));
-	return job;
+	return ret;
 }
 
-struct job listPeek(void)
+int listPeek(struct job *out)
 {
+	assert(out != NULL);
 	assert(jobs != NULL);
 	assert(!pthread_mutex_lock(&listMutex));
-	struct job ans = jobs[index(old)];
+	int ans;
+	if (computeSize() > 0) {
+		*out = jobs[old];
+		ans = 0;
+	} else {
+		ans = 1;
+	}
 	assert(!pthread_mutex_unlock(&listMutex));
 	return ans;
 }

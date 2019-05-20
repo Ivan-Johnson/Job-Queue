@@ -223,11 +223,12 @@ static void runJobs()
 	int fail;
 
 	while (1) {
-		struct job job = listNext();
-		if (jobEq(job, JOB_ZEROS)) {
+		struct job job;
+		if (listNext(&job)) {
 			break;
 		}
 
+		assert(this->numSlots <= job.slots);
 		if (slotsAvailible() < job.slots) {
 			listAdd(job, true);
 			break;

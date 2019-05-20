@@ -71,7 +71,8 @@ void testRandomGrowth()
 			}
 		} else {
 			if (old != new) {
-				struct job job = listNext();
+				struct job job;
+				TEST_ASSERT_FALSE(listNext(&job));
 				TEST_ASSERT_TRUE(jobEq(job, arr[old]));
 				old++;
 			}
@@ -79,7 +80,8 @@ void testRandomGrowth()
 	}
 
 	while (old != new) {
-		struct job job = listNext();
+		struct job job;
+		TEST_ASSERT_FALSE(listNext(&job));
 		TEST_ASSERT_TRUE(jobEq(job, arr[old]));
 		old++;
 	}
@@ -98,9 +100,9 @@ void testOverdraw()
 	size_t cap = listCurCapacity();
 	for (size_t x = 0; x < cap; x++) {
 		listAdd(jobs[0], false);
-		listNext();
+		listNext(NULL);
 	}
 
 	TEST_ASSERT_TRUE(listSize() == 0);
-	TEST_ASSERT_TRUE(jobEq(listNext(), JOB_ZEROS));
+	TEST_ASSERT_TRUE(listNext(NULL));
 }
