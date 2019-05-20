@@ -1,15 +1,15 @@
 /*
- * Test/testStack.c
+ * Test/testList.c
  *
- * Tests if tasklist can simultaneously function as both a stack and a
+ * Tests if joblist can simultaneously function as both a stack and a
  * queue. Note that testQueue and testStack have more extensive tests of
- * tasklist.
+ * joblist.
  *
  * Copyright(C) 2018-2019, Ivan Tobias Johnson
  *
  * LICENSE: GPL 2.0
  */
-#include "tasklist.h"
+#include "joblist.h"
 
 #include <unity.h>
 #include <stdbool.h>

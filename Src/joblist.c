@@ -1,7 +1,7 @@
 /*
- * Src/tasklist.c
+ * Src/joblist.c
  *
- * implements Src/tasklist.h
+ * implements Src/joblist.h
  *
  * Copyright(C) 2018-2019, Ivan Tobias Johnson
  *

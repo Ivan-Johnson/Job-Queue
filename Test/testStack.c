@@ -1,13 +1,13 @@
 /*
  * Test/testStack.c
  *
- * Tests if tasklist can function as a stack
+ * Tests if joblist can function as a stack
  *
  * Copyright(C) 2018-2019, Ivan Tobias Johnson
  *
  * LICENSE: GPL 2.0
  */
-#include "tasklist.h"
+#include "joblist.h"
 
 #include <unity.h>
 #include <stdbool.h>

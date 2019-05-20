@@ -25,7 +25,7 @@
 #include <unistd.h>
 
 #include "job.h"
-#include "tasklist.h"
+#include "joblist.h"
 #include "server.h"
 #include "slots.h"
 #include "messenger.h"

@@ -1,13 +1,13 @@
 /*
  * Test/testQueue.c
  *
- * Tests if tasklist can function as a queue.
+ * Tests if joblist can function as a queue.
  *
  * Copyright(C) 2018-2019, Ivan Tobias Johnson
  *
  * LICENSE: GPL 2.0
  */
-#include "tasklist.h"
+#include "joblist.h"
 
 #include <unity.h>
 

@@ -1,7 +1,7 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 /*
- * Src/tasklist.h
+ * Src/joblist.h
  *
  * Maintains a single queue of jobs
  *
