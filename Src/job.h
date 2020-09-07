@@ -30,7 +30,7 @@ struct job {
 // The archeotype of an uninitialized job.
 //
 // JOB_ZEROS is to jobs as NULL is to pointers.
-const struct job JOB_ZEROS;
+static const struct job JOB_ZEROS;
 
 //Given a *fully initialized job*, modifies buf such that it can be used by
 //unserializeJob can be used to reconstruct the given job. Returns the number of
