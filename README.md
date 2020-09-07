@@ -1,7 +1,7 @@
-# Jörmungandr
+# Job Queue
 
-Jörmungandr (a.k.a. Jormungandr) is a project for scheduling a queue of tasks
-onto a limited set of devices.
+This repository is a project for scheduling a queue of tasks onto a limited set
+of devices.
 
 Use `jormungandr launch /tmp/Server` to launch a server that uses "/tmp/Server"
 as its working directory. The server's log files, among other things, are stored
@@ -17,7 +17,7 @@ command will be placed at the front of the queue instead of the back. You can
 specify how many resources a command requires using the `--slotsuse` option.
 
 Much like [Task Spooler](http://vicerveza.homeunix.net/~viric/soft/ts/),
-Jörmungandr ensures that the total number of resources required by all of the
+this project ensures that the total number of resources required by all of the
 currently running jobs does not exceed the maximum. Unlike Task Spooler,
 however, the list of resources are enumerated and a variable is set in the
 executed command's environments, telling them exactly which resources they
