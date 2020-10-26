@@ -2,12 +2,12 @@
 #
 #Defines what should not be added to the git repository
 #
-#Copyright(C) 2018, Ivan Tobias Johnson
+#Copyright(C) 2018, 2020, Ivan Tobias Johnson
 #
 #LICENSE: GPL 2.0
 
-Bin
+/Bin
 /makefile.config
-Test/bisect.c
+/Test/bisect.c
 /TODO.txt
 **/*~
