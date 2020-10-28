@@ -40,12 +40,15 @@ static struct job *jobs = NULL;
 static size_t arr_len = 0, old = 0, new = 0;
 static pthread_mutex_t listMutex;
 
-void listInitialize(void)
+int listInitialize(void)
 {
 	assert(jobs == NULL);
 
 	arr_len = LIST_MIN_SIZE;
 	jobs = malloc(sizeof(struct job) * arr_len);
+	if (jobs == NULL) {
+		return 1;
+	}
 	old = 1;
 	new = 1;
 
@@ -62,6 +65,7 @@ void listInitialize(void)
 		fprintf(stderr, "Could not initialize mutex\n");
 		exit(1);
 	}
+	return 0;
 }
 
 #ifndef TEST

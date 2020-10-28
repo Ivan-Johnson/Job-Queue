@@ -15,6 +15,14 @@
 #include "job.h"
 #include "server.h"
 
+/*
+ * Initialize the list; this function must be called before calling any other
+ * function in this module.
+ *
+ * Returns zero when successful, and one if memory allocation fails.
+ *
+ * The behavior is undefined if the list is already initialized.
+ */
 int listInitialize();
 
 /*
