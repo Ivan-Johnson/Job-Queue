@@ -64,6 +64,10 @@ void listInitialize(void)
 	}
 }
 
+#ifndef TEST
+static
+#endif
+__attribute__ ((unused))
 size_t listCurCapacity(void)
 {
 	assert(jobs != NULL);
