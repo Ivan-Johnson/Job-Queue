@@ -1,11 +1,11 @@
-#ifndef QUEUE_H
-#define QUEUE_H
+#ifndef JOBLIST_H
+#define JOBLIST_H
 /*
  * Src/joblist.h
  *
- * Maintains a single queue of jobs
+ * A thread-safe queue for storing `struct job`s.
  *
- * Copyright(C) 2018-2019, Ivan Tobias Johnson
+ * Copyright(C) 2018-2020, Ivan Tobias Johnson
  *
  * LICENSE: GPL 2.0
  */
@@ -17,6 +17,10 @@
 
 int listInitialize();
 
+/*
+ * Add the given job to the queue. If isPriority is true, it is added to the
+ * front of the queue, otherwise it is added to the back.
+ */
 void listAdd(struct job, bool isPriority);
 
 /*
@@ -27,30 +31,28 @@ void listAdd(struct job, bool isPriority);
 size_t listSize(void);
 
 /*
- * if listSize() > 0:
- *     Removes and assigns it to (*out).
- *     return 0
- * else:
- *     return 1
+ * Removes the head of the list and assigns it to `*out`.
  *
- * If (out == NULL), this function simply removes the first element if it
- * exists, and returns the appropriate value.
+ * Returns zero when successful, and one if the list is empty.
  *
- * NOTE: be wary of race conditions when checking listSize. In general, it is
- * preferred to simply call listNext and check the return value rather than
- * check with listSize before calling listNext.
+ * `out` may be null; the assignment is not performed in that case, and the
+ * behavior of listNext is otherwise unchanged.
  */
 int listNext(struct job *out);
 
 
 /*
- * Identical to listNext, except that:
+ * Copys the head of the list to `*out`.
  *
- * A: listPeek never removes the job from the list.
+ * The behavior is undefined if `out` is null.
  *
- * B: out cannot be NULL
+ * Returns zero when successful.
  */
 int listPeek(struct job *out);
+
+/*
+ * Destroy the list, freeing any memory that was allocated by this module.
+ */
 void listFree(void);
 
 #ifdef TEST
